@@ -161,17 +161,10 @@ tbody td:first-child{color:var(--text);font-weight:500}
 <div class="sb" id="gSt"></div>
 
 <div class="fcard">
-  <div class="ftop"><span class="flbl">🔍 Filtros</span><button class="btn bg" style="font-size:.72rem;padding:5px 11px" onclick="clearFilters()">Limpar</button></div>
-  <div class="fgrid">
+  <div class="ftop"><span class="flbl">🔍 Filtros</span></div>
+  <div class="fgrid" style="max-width:320px">
     <div class="fgrp"><div class="fgl">Período</div><select class="fsel" id="fPer" onchange="onPeriodChange()"><option value="7">Últimos 7 dias</option><option value="30" selected>Últimos 30 dias</option><option value="60">Últimos 60 dias</option><option value="90">Últimos 90 dias</option><option value="180">Últimos 6 meses</option><option value="365">Último ano</option><option value="custom">Personalizado</option></select></div>
-    <div class="fgrp" id="fCusW" style="display:none"><div class="fgl">Intervalo</div><div class="drange"><input class="di" type="date" id="fDS" onchange="applyFilters()"/><span style="font-size:.68rem;color:var(--text3)">até</span><input class="di" type="date" id="fDE" onchange="applyFilters()"/></div></div>
-    <div class="fgrp"><div class="fgl">Estado</div><select class="fsel" id="fSt" onchange="applyFilters()"><option value="">Todos</option></select></div>
-    <div class="fgrp"><div class="fgl">Categoria</div><select class="fsel" id="fCat" onchange="applyFilters()"><option value="">Todas</option></select></div>
-    <div class="fgrp"><div class="fgl">Canal</div><select class="fsel" id="fChan" onchange="applyFilters()"><option value="">Todos</option></select></div>
-    <div class="fgrp"><div class="fgl">Campanha</div><select class="fsel" id="fCamp" onchange="applyFilters()"><option value="">Todas</option></select></div>
-    <div class="fgrp"><div class="fgl">Origem</div><select class="fsel" id="fOri" onchange="applyFilters()"><option value="">Todas</option></select></div>
-    <div class="fgrp"><div class="fgl">Mídia</div><select class="fsel" id="fMed" onchange="applyFilters()"><option value="">Todas</option></select></div>
-    <div class="fgrp"><div class="fgl">Origem/Mídia</div><select class="fsel" id="fSM" onchange="applyFilters()"><option value="">Todas</option></select></div>
+    <div class="fgrp" id="fCusW" style="display:none"><div class="fgl">Intervalo</div><div class="drange"><input class="di" type="date" id="fDS" onchange="onCustomDate()"/><span style="font-size:.68rem;color:var(--text3)">até</span><input class="di" type="date" id="fDE" onchange="onCustomDate()"/></div></div>
   </div>
 </div>
 
@@ -185,8 +178,12 @@ tbody td:first-child{color:var(--text);font-weight:500}
 </div>
 
 <div class="cgrid">
-  <div class="ccard c8"><div class="chead"><div><div class="ctitle">Histórico Mensal de Vendas</div><div class="csub">Evolução temporal</div></div><div class="togrow"><button class="tog on" id="togV" onclick="setLM('value')">R$</button><button class="tog" id="togQ" onclick="setLM('qty')">Qtd</button></div></div><canvas id="cLine" height="220"></canvas><div class="empty" id="eLine" style="display:none"><div class="eico">📊</div><div class="ettl">Sem dados</div></div></div>
-  <div class="ccard c4"><div class="chead"><div><div class="ctitle">Distribuição por Origem</div><div class="csub">% das vendas</div></div></div><canvas id="cDonut" height="220"></canvas><div class="empty" id="eDonut" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLeg" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px"></div></div>
+  <div class="ccard c8"><div class="chead"><div><div class="ctitle">Histórico de Vendas</div><div class="csub" id="lineSubtitle">Evolução temporal</div></div><div class="togrow"><button class="tog on" id="togV" onclick="setLM('value')">R$</button><button class="tog" id="togQ" onclick="setLM('qty')">Qtd</button></div></div><canvas id="cLine" height="220"></canvas><div class="empty" id="eLine" style="display:none"><div class="eico">📊</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Canal</div><div class="csub">% das vendas</div></div></div><canvas id="cDonutChan" height="180"></canvas><div class="empty" id="eDonutChan" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegChan" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
+  <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Mídia</div><div class="csub">% das vendas</div></div></div><canvas id="cDonutMed" height="180"></canvas><div class="empty" id="eDonutMed" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegMed" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
+  <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Estado</div><div class="csub">% das vendas</div></div></div><canvas id="cDonutSt" height="180"></canvas><div class="empty" id="eDonutSt" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegSt" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
+  <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Categoria</div><div class="csub">% das vendas</div></div></div><canvas id="cDonutCat" height="180"></canvas><div class="empty" id="eDonutCat" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegCat" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
+  <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Origem</div><div class="csub">% das vendas</div></div></div><canvas id="cDonut" height="180"></canvas><div class="empty" id="eDonut" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLeg" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c6"><div class="chead"><div><div class="ctitle">Vendas por Origem</div><div class="csub">Receita por source</div></div></div><canvas id="cOri" height="250"></canvas><div class="empty" id="eOri" style="display:none"><div class="eico">📊</div><div class="ettl">Sem dados</div></div></div>
   <div class="ccard c6"><div class="chead"><div><div class="ctitle">ROAS por Origem</div><div class="csub">Origens com custo</div></div></div><canvas id="cRoas" height="250"></canvas><div class="empty" id="eRoas" style="display:none"><div class="eico">💸</div><div class="ettl">Sem custo atribuído</div></div></div>
   <div class="ccard c6"><div class="chead"><div><div class="ctitle">Vendas por Campanha</div><div class="csub">Top campanhas</div></div></div><canvas id="cCamp" height="250"></canvas><div class="empty" id="eCamp" style="display:none"><div class="eico">📣</div><div class="ettl">Sem dados</div></div></div>
@@ -229,7 +226,12 @@ function setLoad(on,step){$('LOV').classList.toggle('on',on);if(step)$('LSTP').t
 function collapseAuth(){$('authCard').style.display='none';}
 function toggleTheme(){G.theme=G.theme==='light'?'dark':'light';document.body.setAttribute('data-theme',G.theme);$('btnTheme').textContent=G.theme==='dark'?'☀️':'🌙';if(G.filtered)renderAll(G.filtered);}
 function showEmp(cid,eid,show){const c=$(cid),e=$(eid);if(c)c.style.display=show?'none':'block';if(e)e.style.display=show?'flex':'none';}
-function destroyChart(k){if(G.charts[k]){G.charts[k].destroy();delete G.charts[k];}}
+function destroyChart(k){
+  if(G.charts[k]){G.charts[k].destroy();delete G.charts[k];}
+}
+function destroyAllCharts(){
+  Object.keys(G.charts).forEach(function(k){destroyChart(k);});
+}
 function getDark(){return G.theme==='dark';}
 function gridColor(){return getDark()?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)';}
 function tickColor(){return getDark()?'#94a3b8':'#718096';}
@@ -467,7 +469,6 @@ try{
 }catch(ce){
   console.warn('⚠️ Custo indisponível:',ce.message);
 }
-    populateFilters();
     applyFilters();
     $('lastUpd').textContent='⏱ '+new Date().toLocaleString('pt-BR');
     setSt('gSt','o','✅ '+G.raw.main.length+' registros · '+dias+' dias carregados.');
@@ -512,51 +513,37 @@ function onPeriodChange(){
   }
 }
 
-function populateFilters(){
-  var d=G.raw.main;if(!d.length)return;
-  var uniq=function(arr){return[...new Set(arr.filter(Boolean))].sort();};
-  fillSel('fSt',  uniq(G.raw.states.map(function(r){return r.region||'';})));
-  fillSel('fCat', uniq(G.raw.items.map(function(r){return r.itemcategory||'';})));
-  fillSel('fChan',uniq(d.map(function(r){return r.sessiondefaultchannelgrouping||'';})));
-  fillSel('fCamp',uniq(d.map(function(r){return r.sessioncampaignname||'';})));
-  fillSel('fOri', uniq(d.map(function(r){return r.sessionsource||'';})));
-  fillSel('fMed', uniq(d.map(function(r){return r.sessionmedium||'';})));
-  fillSel('fSM',  uniq(d.map(function(r){var s=r.sessionsource||'';var m=r.sessionmedium||'';return(s&&m)?s+' / '+m:'';})));
-}
+function populateFilters(){}
 
-function fillSel(id,vals){
-  var sel=$(id);if(!sel)return;
-  var cur=sel.value;
-  sel.innerHTML='<option value="">Todos</option>';
-  vals.forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;sel.appendChild(o);});
-  if(cur)sel.value=cur;
-}
+function fillSel(){}
 
 function clearFilters(){
-  ['fSt','fCat','fChan','fCamp','fOri','fMed','fSM'].forEach(function(id){var e=$(id);if(e)e.value='';});
-  $('fPer').value='30';$('fCusW').style.display='none';
+  $('fPer').value='30';
+  $('fCusW').style.display='none';
   Object.keys(CACHE).forEach(function(k){delete CACHE[k];});
   fetchAll();
 }
 
+function onCustomDate(){
+  var ds=$('fDS').value,de=$('fDE').value;
+  if(ds&&de){
+    Object.keys(CACHE).forEach(function(k){delete CACHE[k];});
+    fetchAll();
+  }
+}
+
 function applyFilters(){
   if(!G.raw.main.length)return;
-  var fSt=$('fSt').value,fCat=$('fCat').value,fChan=$('fChan').value,fCamp=$('fCamp').value,fOri=$('fOri').value,fMed=$('fMed').value,fSM=$('fSM').value;
-  var main=G.raw.main.filter(function(r){
-    var src=r.sessionsource||'';
-    var med=r.sessionmedium||'';
-    var camp=r.sessioncampaignname||'';
-    var chan=r.sessiondefaultchannelgrouping||'';
-    var reg=r.region||'';
-    var sm=(src&&med)?src+' / '+med:'';
-    if(fSt&&reg!==fSt)return false;
-    if(fChan&&chan!==fChan)return false;
-    if(fCamp&&camp!==fCamp)return false;
-    if(fOri&&src!==fOri)return false;
-    if(fMed&&med!==fMed)return false;
-    if(fSM&&sm!==fSM)return false;
-    return true;
-  });
+  G.filtered={
+    main:G.raw.main,
+    months:G.raw.months,
+    first:G.raw.first,
+    last:G.raw.last,
+    items:G.raw.items,
+    states:G.raw.states
+  };
+  renderAll(G.filtered);
+}
   var months=G.raw.months.filter(function(r){
     if(fOri&&(r.sessionsource||'')!==fOri)return false;
     return true;
@@ -599,10 +586,14 @@ function applyFilters(){
   renderAll(G.filtered);
 }
 
-function renderAll(d){
+ffunction renderAll(d){
   renderKPIs(d.main);
   renderLine(d.months);
   renderDonut(d.main);
+  renderDonutByKey('chan','cDonutChan','eDonutChan','dLegChan',d.main,function(r){return r.sessiondefaultchannelgrouping||'(direct)';});
+  renderDonutByKey('med','cDonutMed','eDonutMed','dLegMed',d.main,function(r){return r.sessionmedium||'(none)';});
+  renderDonutByKey('st','cDonutSt','eDonutSt','dLegSt',d.states,function(r){return r.region||'(outros)';},function(r){return safeN(r.purchaserevenue||0);});
+  renderDonutByKey('cat','cDonutCat','eDonutCat','dLegCat',d.items,function(r){return r.itemcategory||'(sem categoria)';},function(r){return safeN(r.itemrevenue||0);});
   renderOrigin(d.main);
   renderRoasChart(d.main);
   renderCampaign(d.main);
@@ -648,6 +639,8 @@ function renderLine(data){
   destroyChart('line');
   if(!data||!data.length){showEmp('cLine','eLine',true);return;}
   showEmp('cLine','eLine',false);
+  var sub=$('lineSubtitle');
+if(sub)sub.textContent=useDia?'Dia a dia':'Evolução mensal';
   var useDia=G.raw.useDia;
   var periods={};
   data.forEach(function(r){
@@ -844,6 +837,83 @@ function renderDonut(data){
       }
     }
   });
+function renderDonutByKey(key,canvasId,emptyId,legId,data,keyFn,valFn){
+  destroyChart('donut_'+key);
+  valFn=valFn||function(r){return safeN(r.purchaserevenue||0);};
+  var map={};
+  data.forEach(function(r){
+    var k=keyFn(r);
+    if(!k)return;
+    if(!map[k])map[k]=0;
+    map[k]+=valFn(r);
+  });
+  var entries=Object.entries(map).filter(function(e){return e[1]>0;})
+    .sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  if(!entries.length){
+    showEmp(canvasId,emptyId,true);
+    $(legId).innerHTML='';
+    return;
+  }
+  showEmp(canvasId,emptyId,false);
+  var labels=entries.map(function(e){return e[0];});
+  var vals=entries.map(function(e){return e[1];});
+  var colors=labels.map(function(_,i){return getC(i);});
+  var total=vals.reduce(function(a,b){return a+b;},0);
+  var isDark=getDark();
+  G.charts['donut_'+key]=new Chart($(canvasId).getContext('2d'),{
+    type:'doughnut',
+    data:{
+      labels:labels,
+      datasets:[{
+        data:vals,
+        backgroundColor:colors,
+        borderWidth:3,
+        borderColor:isDark?'#1e2130':'#fff',
+        hoverBorderWidth:4,
+        hoverOffset:6
+      }]
+    },
+    options:{
+      responsive:true,
+      cutout:'60%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:isDark?'#1e2130':'#fff',
+          titleColor:isDark?'#f1f5f9':'#1a202c',
+          bodyColor:isDark?'#94a3b8':'#4a5568',
+          borderColor:'rgba(0,0,0,0.1)',
+          borderWidth:1,
+          padding:10,
+          callbacks:{
+            label:function(c){
+              return ' '+brl(c.raw)+' ('+((c.raw/total)*100).toFixed(1)+'%)';
+            }
+          }
+        },
+        datalabels:{
+          display:function(ctx){
+            return(ctx.dataset.data[ctx.dataIndex]/total)>0.05;
+          },
+          color:'#fff',
+          font:{weight:'700',size:11},
+          formatter:function(v){
+            return ((v/total)*100).toFixed(0)+'%';
+          }
+        }
+      }
+    }
+  });
+  $(legId).innerHTML=labels.map(function(l,i){
+    var p=((vals[i]/total)*100).toFixed(1);
+    return '<div style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text2);min-width:110px">'
+      +'<span style="width:10px;height:10px;border-radius:3px;background:'+colors[i]+';flex-shrink:0"></span>'
+      +'<span style="flex:1">'+short(l,16)+'</span>'
+      +'<span style="font-weight:700;color:var(--text)">'+p+'%</span>'
+      +'</div>';
+  }).join('');
+}
+  
   $('dLeg').innerHTML=labels.map(function(l,i){
     var p=((vals[i]/total)*100).toFixed(1);
     return '<div style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text2);min-width:120px">'
