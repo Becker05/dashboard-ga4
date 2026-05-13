@@ -323,7 +323,7 @@ tbody td:first-child{color:var(--text);font-weight:500}
 
 <script>
 const CLIENT_ID='82269411044-upslc9688j0lajc0hfdvs0qg96mahfeq.apps.googleusercontent.com';
-const SCOPE='https://www.googleapis.com/auth/analytics.readonly';
+const SCOPE='https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/userinfo.email';
 const CACHE={};
 const CACHE_TTL=5*60*1000;
 const G={token:null,propId:'',theme:'light',lineMode:'value',sortCol:2,sortAsc:false,raw:{main:[],months:[],items:[],first:[],last:[],states:[]},filtered:null,tokenClient:null,gsiReady:false,charts:{},userEmail:'',userName:''};
@@ -386,26 +386,48 @@ function initGsi(){
   G.tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:CLIENT_ID,
     scope:SCOPE,
-    callback:async function(resp){
+   callback:async function(resp){
       $('btnGoogle').disabled=false;
       if(resp.error){setSt('authSt','e','❌ Erro: '+(resp.error_description||resp.error));return;}
       G.token=resp.access_token;
 
-      /* busca email do usuário */
       setSt('authSt','i','<div class="spin"></div> Verificando acesso...');
       try{
-        var uInfo=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{
-          headers:{Authorization:'Bearer '+G.token}
-        }).then(function(r){return r.json();});
-        G.userEmail=uInfo.email||'';
-        G.userName=uInfo.name||'';
+        var email='';
+        
+        if(resp.email){
+          email=resp.email;
+        }
+        
+        if(!email){
+          await new Promise(function(res){setTimeout(res,800);});
+          var uResp=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{
+            headers:{Authorization:'Bearer '+G.token}
+          });
+          if(uResp.ok){
+            var uInfo=await uResp.json();
+            email=uInfo.email||'';
+          }
+        }
 
-        /* verifica no Firestore */
+        if(!email&&resp.token_type){
+          email=resp.email||'';
+        }
+
+        if(!email){
+          setSt('authSt','e','❌ Não foi possível obter o e-mail. Tente novamente.');
+          $('btnGoogle').disabled=false;
+          return;
+        }
+
+        G.userEmail=email;
+
         if(typeof window._checkUserAccess!=='function'){
           setSt('authSt','e','❌ Sistema não carregado. Recarregue a página.');
           return;
         }
-        var access=await window._checkUserAccess(G.userEmail);
+
+        var access=await window._checkUserAccess(email);
         if(!access.allowed){
           $('authCard').style.display='none';
           $('deniedCard').style.display='';
@@ -414,9 +436,8 @@ function initGsi(){
           return;
         }
 
-        /* acesso liberado */
         G.propId=access.propertyId;
-        $('userEmail').textContent=G.userEmail;
+        $('userEmail').textContent=email;
         $('userBadge').style.display='';
         $('hTitle').textContent='Dashboard '+(access.nome||'GA4');
         $('hSub').textContent='Performance de Vendas & Campanhas — GA4';
@@ -427,11 +448,9 @@ function initGsi(){
 
       }catch(err){
         setSt('authSt','e','❌ Erro ao verificar acesso: '+err.message);
+        $('btnGoogle').disabled=false;
       }
     }
-  });
-}
-
 function triggerLogin(){
   if(!G.gsiReady||!G.tokenClient){setSt('authSt','w','⚠️ Aguarde e tente novamente.');initGsi();return;}
   setSt('authSt','i','<div class="spin"></div> Abrindo autenticação Google...');
