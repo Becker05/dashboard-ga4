@@ -349,37 +349,74 @@ async function fetchAll(){
     G.raw.states=res[3]?parseRep(res[3]):[];
     console.log('✅ items:'+G.raw.items.length+' first:'+G.raw.first.length+' last:'+G.raw.last.length+' states:'+G.raw.states.length);
 
-    setLoad(true,'Buscando custos de mídia...');
-    try{
-      var qc=await ga4ReqSafe({
-        dateRanges:[dr],
-        dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'sessionCampaignName'}],
-        metrics:[{name:'advertiserAdCost'},{name:'advertiserAdClicks'},{name:'advertiserAdImpressions'}],
-        limit:500
-      },tmo);
-      var cd=parseRep(qc);
-      console.log('✅ custo: '+cd.length+' linhas');
-      cd.forEach(function(c){
-        var src=c.sessionsource||'';
-        var med=c.sessionmedium||'';
-        var camp=c.sessioncampaignname||'';
-        var cost=safeN(c.advertiseradcost||0);
-        var clicks=safeN(c.advertiseradclicks||0);
-        var impr=safeN(c.advertiseradimpressions||0);
-        if(cost>0||clicks>0){
-          G.raw.main.forEach(function(r){
-            if((r.sessionsource||'')=== src&&(r.sessionmedium||'')===med&&(r.sessioncampaignname||'')===camp){
-              r.advertiseradcost=(safeN(r.advertiseradcost||0)+cost);
-              r.advertiseradclicks=(safeN(r.advertiseradclicks||0)+clicks);
-              r.advertiseradimpressions=(safeN(r.advertiseradimpressions||0)+impr);
-            }
-          });
-        }
-      });
-    }catch(ce){
-      console.warn('⚠️ Custo indisponível:',ce.message);
-    }
+  setLoad(true,'Buscando custos de mídia...');
+try{
+  var qc=await ga4ReqSafe({
+    dateRanges:[dr],
+    dimensions:[
+      {name:'sessionCampaignName'},
+      {name:'sessionSource'},
+      {name:'sessionMedium'}
+    ],
+    metrics:[
+      {name:'manualAdCost'},
+      {name:'advertiserAdClicks'},
+      {name:'advertiserAdImpressions'}
+    ],
+    limit:500
+  },tmo);
+  var cd=parseRep(qc);
+  console.log('✅ custo raw: '+cd.length+' linhas');
 
+  /* monta mapa de custo SEM duplicar por região */
+  var costMap={};
+  cd.forEach(function(c){
+    var camp=c.sessioncampaignname||'';
+    var src=c.sessionsource||'';
+    var med=c.sessionmedium||'';
+    var k=camp+'||'+src+'||'+med;
+    if(!costMap[k]){
+      costMap[k]={
+        camp:camp,
+        src:src,
+        med:med,
+        cost:0,
+        clicks:0,
+        impr:0
+      };
+    }
+    costMap[k].cost +=safeN(c.manualadcost||0);
+    costMap[k].clicks+=safeN(c.advertiseradclicks||0);
+    costMap[k].impr  +=safeN(c.advertiseradimpressions||0);
+  });
+
+  /* aplica custo no main — cada chave só aplicada UMA vez */
+  var appliedKeys={};
+  G.raw.main.forEach(function(r){
+    var camp=r.sessioncampaignname||'';
+    var src=r.sessionsource||'';
+    var med=r.sessionmedium||'';
+    var k=camp+'||'+src+'||'+med;
+    if(costMap[k]&&!appliedKeys[k]){
+      r.advertiseradcost      =costMap[k].cost;
+      r.advertiseradclicks    =costMap[k].clicks;
+      r.advertiseradimpressions=costMap[k].impr;
+      appliedKeys[k]=true;
+    } else {
+      /* zera custo nas linhas duplicadas da mesma chave */
+      r.advertiseradcost      =0;
+      r.advertiseradclicks    =0;
+      r.advertiseradimpressions=0;
+    }
+  });
+
+  /* log de verificação */
+  var totalCost=Object.values(costMap).reduce(function(a,b){return a+b.cost;},0);
+  console.log('✅ Custo total aplicado: R$ '+totalCost.toFixed(2));
+
+}catch(ce){
+  console.warn('⚠️ Custo indisponível:',ce.message);
+}
     populateFilters();
     applyFilters();
     $('lastUpd').textContent='⏱ '+new Date().toLocaleString('pt-BR');
