@@ -402,7 +402,7 @@ try{
     });
 
     /* aplica custo no main — cada chave só uma vez */
-    var appliedKeys={};
+        var appliedKeys={};
     G.raw.main.forEach(function(r){
       var camp=r.sessioncampaignname||'';
       var src=r.sessionsource||'';
@@ -418,6 +418,27 @@ try{
 
     var totalCost=Object.values(costMap).reduce(function(a,b){return a+b.cost;},0);
     console.log('✅ Custo total aplicado: R$ '+totalCost.toFixed(2));
+
+    /* ✅ ADICIONE AQUI — campanhas com custo mas sem receita */
+    Object.keys(costMap).forEach(function(k){
+      if(!appliedKeys[k]&&costMap[k].cost>0){
+        var parts=k.split('||');
+        G.raw.main.push({
+          sessioncampaignname:parts[0],
+          sessionsource:parts[1],
+          sessionmedium:parts[2],
+          advertiseradcost:costMap[k].cost,
+          purchaserevenue:0,
+          ecommercepurchases:0,
+          sessions:0,
+          activeusers:0,
+          sessiondefaultchannelgrouping:'',
+          region:''
+        });
+        console.log('➕ Custo sem receita adicionado: '+parts[0]+' R$ '+costMap[k].cost.toFixed(2));
+      }
+    });
+
   }else{
     console.warn('⚠️ Nenhuma métrica de custo retornou dados.');
   }
@@ -655,10 +676,13 @@ function renderDonut(data){
   $('dLeg').innerHTML=labels.map(function(l,i){return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:.68rem;color:var(--text2)"><span style="width:8px;height:8px;border-radius:50%;background:'+colors[i]+';flex-shrink:0"></span>'+short(l,16)+'</span>';}).join('');
 }
 
-function aggBy(data,keyFn,valFn){
+function aggBy(data,keyFn,valFn,includeZero){
   var map={};
   data.forEach(function(r){var k=keyFn(r);if(!map[k])map[k]=0;map[k]+=valFn(r);});
-  return Object.entries(map).filter(function(e){return e[1]>0;}).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  return Object.entries(map)
+    .filter(function(e){return includeZero?e[1]>=0:e[1]>0;})
+    .sort(function(a,b){return b[1]-a[1];})
+    .slice(0,10);
 }
 
 function renderOrigin(data){
@@ -710,6 +734,7 @@ function renderLast(data){
 
 function renderTable(data){
   var map={};
+  var map={};
   data.forEach(function(r){
     var src=r.sessionsource||'(direct)';
     var camp=r.sessioncampaignname||'(sem campanha)';
@@ -720,7 +745,8 @@ function renderTable(data){
     map[k].pur +=safeN(r.ecommercepurchases||0);
     map[k].sess+=safeN(r.sessions||0);
   });
-  var rows=Object.values(map);
+  /* mantém linhas que têm custo OU receita */
+  var rows=Object.values(map).filter(function(r){return r.rev>0||r.cost>0;});
   var col=G.sortCol,asc=G.sortAsc;
   rows.sort(function(a,b){
     var va=[a.src,a.camp,a.rev,a.cost,a.cost>0?a.rev/a.cost:0,a.pur,a.pur>0?a.rev/a.pur:0,a.sess][col];
