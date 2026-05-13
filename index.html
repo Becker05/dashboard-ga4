@@ -195,10 +195,12 @@ tbody td:first-child{color:var(--text);font-weight:500}
 <script>
 const CLIENT_ID='82269411044-jcapkv10lokbd9dip9c6huqbrfgsps7v.apps.googleusercontent.com';
 const SCOPE='https://www.googleapis.com/auth/analytics.readonly';
+const CACHE={};
+const CACHE_TTL=5*60*1000;
 const G={token:null,propId:'294956299',theme:'light',lineMode:'value',sortCol:2,sortAsc:false,raw:{main:[],months:[],items:[],first:[],last:[],states:[]},filtered:null,tokenClient:null,gsiReady:false,charts:{}};
 const $=id=>document.getElementById(id);
 const safeN=v=>{if(v===null||v===undefined||v===''||v==='(not set)')return 0;const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?0:n;};
-const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'').replace(/^_|_$/g,'');
 const brl=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
 const num=v=>new Intl.NumberFormat('pt-BR').format(Math.round(v||0));
 const pct=v=>(v||0).toFixed(2).replace('.',',')+' %';
@@ -252,20 +254,9 @@ function triggerLogin(){
 
 function refreshData(){
   if(!G.token){setSt('gSt','w','⚠️ Autentique primeiro.');$('authCard').style.display='';$('authCard').scrollIntoView({behavior:'smooth'});return;}
+  /* limpa cache ao atualizar manualmente */
+  Object.keys(CACHE).forEach(function(k){delete CACHE[k];});
   fetchAll();
-}
-
-async function ga4Req(body){
-  var url='https://analyticsdata.googleapis.com/v1beta/properties/'+G.propId+':runReport';
-  var r=await fetch(url,{method:'POST',headers:{'Authorization':'Bearer '+G.token,'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(!r.ok){
-    var e=await r.json().catch(function(){return{};});
-    var m=(e&&e.error&&e.error.message)||'HTTP '+r.status;
-    if(r.status===401)throw new Error('Token expirado. Reconecte.');
-    if(r.status===403)throw new Error('Sem permissão. Verifique o Property ID e se a Google Analytics Data API está ativa.');
-    throw new Error(m);
-  }
-  return r.json();
 }
 
 function parseRep(rep){
@@ -279,10 +270,9 @@ function parseRep(rep){
     return o;
   });
 }
-  const CACHE={};
-const CACHE_TTL=5*60*1000; // 5 minutos
 
-async function ga4ReqSafe(body,timeoutMs=15000){
+async function ga4ReqSafe(body,timeoutMs){
+  timeoutMs=timeoutMs||15000;
   var cacheKey=JSON.stringify(body)+G.propId;
   var now=Date.now();
   if(CACHE[cacheKey]&&(now-CACHE[cacheKey].ts)<CACHE_TTL){
@@ -316,100 +306,59 @@ async function ga4ReqSafe(body,timeoutMs=15000){
     throw err;
   }
 }
+
 async function fetchAll(){
   setLoad(true,'Iniciando...');
   $('btnRef').disabled=true;
   try{
     var dr=getDR();
     var dias=getDias();
-    /* timeout maior para períodos longos */
     var tmo=dias<=30?12000:dias<=90?20000:30000;
 
     setLoad(true,'Buscando sessões e vendas...');
     var q1=await ga4ReqSafe({
       dateRanges:[dr],
-      dimensions:[
-        {name:'sessionSource'},
-        {name:'sessionMedium'},
-        {name:'sessionCampaignName'},
-        {name:'sessionDefaultChannelGrouping'},
-        {name:'region'}
-      ],
-      metrics:[
-        {name:'sessions'},
-        {name:'purchaseRevenue'},
-        {name:'ecommercePurchases'},
-        {name:'activeUsers'}
-      ],
+      dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'sessionCampaignName'},{name:'sessionDefaultChannelGrouping'},{name:'region'}],
+      metrics:[{name:'sessions'},{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'activeUsers'}],
       limit:5000
     },tmo);
     G.raw.main=parseRep(q1);
-    setLoad(true,'Buscando histórico mensal...');
+    console.log('✅ main: '+G.raw.main.length+' linhas');
 
+    setLoad(true,'Buscando histórico mensal...');
     var q2=await ga4ReqSafe({
       dateRanges:[dr],
       dimensions:[{name:'yearMonth'},{name:'sessionSource'}],
-      metrics:[
-        {name:'purchaseRevenue'},
-        {name:'ecommercePurchases'},
-        {name:'sessions'}
-      ],
+      metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],
       orderBys:[{dimension:{dimensionName:'yearMonth'}}],
       limit:500
     },tmo);
     G.raw.months=parseRep(q2);
-    setLoad(true,'Buscando produtos...');
+    console.log('✅ months: '+G.raw.months.length+' linhas');
 
-    var [q3,q4,q5,q6]=await Promise.all([
-      ga4ReqSafe({
-        dateRanges:[dr],
-        dimensions:[{name:'itemCategory'},{name:'itemName'}],
-        metrics:[{name:'itemsPurchased'},{name:'itemRevenue'}],
-        limit:500
-      },tmo).catch(function(){return null;}),
-      ga4ReqSafe({
-        dateRanges:[dr],
-        dimensions:[{name:'firstUserCampaignName'},{name:'firstUserSource'}],
-        metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],
-        limit:500
-      },tmo).catch(function(){return null;}),
-      ga4ReqSafe({
-        dateRanges:[dr],
-        dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'}],
-        metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],
-        limit:500
-      },tmo).catch(function(){return null;}),
-      ga4ReqSafe({
-        dateRanges:[dr],
-        dimensions:[{name:'region'}],
-        metrics:[{name:'purchaseRevenue'},{name:'sessions'},{name:'ecommercePurchases'}],
-        limit:200
-      },tmo).catch(function(){return null;})
+    setLoad(true,'Buscando produtos, campanhas e estados...');
+    var res=await Promise.all([
+      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'itemCategory'},{name:'itemName'}],metrics:[{name:'itemsPurchased'},{name:'itemRevenue'}],limit:500},tmo).catch(function(e){console.warn('items:',e.message);return null;}),
+      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'firstUserCampaignName'},{name:'firstUserSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],limit:500},tmo).catch(function(e){console.warn('first:',e.message);return null;}),
+      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],limit:500},tmo).catch(function(e){console.warn('last:',e.message);return null;}),
+      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'region'}],metrics:[{name:'purchaseRevenue'},{name:'sessions'},{name:'ecommercePurchases'}],limit:200},tmo).catch(function(e){console.warn('states:',e.message);return null;})
     ]);
-    G.raw.items =q3?parseRep(q3):[];
-    G.raw.first =q4?parseRep(q4):[];
-    G.raw.last  =q5?parseRep(q5):[];
-    G.raw.states=q6?parseRep(q6):[];
+    G.raw.items =res[0]?parseRep(res[0]):[];
+    G.raw.first =res[1]?parseRep(res[1]):[];
+    G.raw.last  =res[2]?parseRep(res[2]):[];
+    G.raw.states=res[3]?parseRep(res[3]):[];
+    console.log('✅ items:'+G.raw.items.length+' first:'+G.raw.first.length+' last:'+G.raw.last.length+' states:'+G.raw.states.length);
 
-    /* custo — separado pois pode não existir */
-    setLoad(true,'Buscando custos...');
+    setLoad(true,'Buscando custos de mídia...');
     try{
       var qc=await ga4ReqSafe({
         dateRanges:[dr],
-        dimensions:[
-          {name:'sessionSource'},
-          {name:'sessionMedium'},
-          {name:'sessionCampaignName'}
-        ],
-        metrics:[
-          {name:'advertiserAdCost'},
-          {name:'advertiserAdClicks'},
-          {name:'advertiserAdImpressions'}
-        ],
+        dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'sessionCampaignName'}],
+        metrics:[{name:'advertiserAdCost'},{name:'advertiserAdClicks'},{name:'advertiserAdImpressions'}],
         limit:500
       },tmo);
       var cd=parseRep(qc);
-      console.log('✅ Custo: '+cd.length+' linhas');
+      console.log('✅ custo: '+cd.length+' linhas');
       cd.forEach(function(c){
         var src=c.sessionsource||'';
         var med=c.sessionmedium||'';
@@ -419,10 +368,7 @@ async function fetchAll(){
         var impr=safeN(c.advertiseradimpressions||0);
         if(cost>0||clicks>0){
           G.raw.main.forEach(function(r){
-            var rs=r.sessionsource||'';
-            var rm=r.sessionmedium||'';
-            var rc=r.sessioncampaignname||'';
-            if(rs===src&&rm===med&&rc===camp){
+            if((r.sessionsource||'')=== src&&(r.sessionmedium||'')===med&&(r.sessioncampaignname||'')===camp){
               r.advertiseradcost=(safeN(r.advertiseradcost||0)+cost);
               r.advertiseradclicks=(safeN(r.advertiseradclicks||0)+clicks);
               r.advertiseradimpressions=(safeN(r.advertiseradimpressions||0)+impr);
@@ -453,33 +399,42 @@ async function fetchAll(){
     $('btnRef').disabled=false;
   }
 }
-function getDR(){var p=$('fPer').value;if(p==='custom')return{startDate:$('fDS').value||'30daysAgo',endDate:$('fDE').value||'today'};return{startDate:p+'daysAgo',endDate:'today'};}
+
+function getDR(){
+  var p=$('fPer').value;
+  if(p==='custom')return{startDate:$('fDS').value||'30daysAgo',endDate:$('fDE').value||'today'};
+  return{startDate:p+'daysAgo',endDate:'today'};
+}
+
 function getDias(){
   var p=$('fPer').value;
   if(p==='custom'){
     var ds=$('fDS').value,de=$('fDE').value;
-    if(ds&&de){
-      var diff=(new Date(de)-new Date(ds))/(1000*60*60*24);
-      return Math.max(1,Math.round(diff));
-    }
+    if(ds&&de){return Math.max(1,Math.round((new Date(de)-new Date(ds))/(1000*60*60*24)));}
     return 30;
   }
   return parseInt(p)||30;
-}  
-  function onPeriodChange(){var p=$('fPer').value;$('fCusW').style.display=p==='custom'?'':'none';if(p!=='custom'&&G.token)fetchAll();}
+}
 
-function getF(r,keys){for(var i=0;i<keys.length;i++){if(r[keys[i]]!==undefined)return r[keys[i]];}return'';}
+function onPeriodChange(){
+  var p=$('fPer').value;
+  $('fCusW').style.display=p==='custom'?'':'none';
+  if(p!=='custom'&&G.token){
+    Object.keys(CACHE).forEach(function(k){delete CACHE[k];});
+    fetchAll();
+  }
+}
 
 function populateFilters(){
   var d=G.raw.main;if(!d.length)return;
   var uniq=function(arr){return[...new Set(arr.filter(Boolean))].sort();};
   fillSel('fSt',  uniq(G.raw.states.map(function(r){return r.region||'';})));
-  fillSel('fCat', uniq(G.raw.items.map(function(r){return r.item_category||r.itemcategory||'';})));
-  fillSel('fChan',uniq(d.map(function(r){return r.session_default_channel_grouping||r.sessiondefaultchannelgrouping||'';})));
-  fillSel('fCamp',uniq(d.map(function(r){return r.session_campaign_name||r.sessioncampaignname||'';})));
-  fillSel('fOri', uniq(d.map(function(r){return r.session_source||r.sessionsource||'';})));
-  fillSel('fMed', uniq(d.map(function(r){return r.session_medium||r.sessionmedium||'';})));
-  fillSel('fSM',  uniq(d.map(function(r){var s=r.session_source||r.sessionsource||'';var m=r.session_medium||r.sessionmedium||'';return(s&&m)?s+' / '+m:'';})));
+  fillSel('fCat', uniq(G.raw.items.map(function(r){return r.itemcategory||'';})));
+  fillSel('fChan',uniq(d.map(function(r){return r.sessiondefaultchannelgrouping||'';})));
+  fillSel('fCamp',uniq(d.map(function(r){return r.sessioncampaignname||'';})));
+  fillSel('fOri', uniq(d.map(function(r){return r.sessionsource||'';})));
+  fillSel('fMed', uniq(d.map(function(r){return r.sessionmedium||'';})));
+  fillSel('fSM',  uniq(d.map(function(r){var s=r.sessionsource||'';var m=r.sessionmedium||'';return(s&&m)?s+' / '+m:'';})));
 }
 
 function fillSel(id,vals){
@@ -492,17 +447,19 @@ function fillSel(id,vals){
 
 function clearFilters(){
   ['fSt','fCat','fChan','fCamp','fOri','fMed','fSM'].forEach(function(id){var e=$(id);if(e)e.value='';});
-  $('fPer').value='30';$('fCusW').style.display='none';applyFilters();
+  $('fPer').value='30';$('fCusW').style.display='none';
+  Object.keys(CACHE).forEach(function(k){delete CACHE[k];});
+  fetchAll();
 }
 
 function applyFilters(){
   if(!G.raw.main.length)return;
   var fSt=$('fSt').value,fCat=$('fCat').value,fChan=$('fChan').value,fCamp=$('fCamp').value,fOri=$('fOri').value,fMed=$('fMed').value,fSM=$('fSM').value;
   var main=G.raw.main.filter(function(r){
-    var src=r.session_source||r.sessionsource||'';
-    var med=r.session_medium||r.sessionmedium||'';
-    var camp=r.session_campaign_name||r.sessioncampaignname||'';
-    var chan=r.session_default_channel_grouping||r.sessiondefaultchannelgrouping||'';
+    var src=r.sessionsource||'';
+    var med=r.sessionmedium||'';
+    var camp=r.sessioncampaignname||'';
+    var chan=r.sessiondefaultchannelgrouping||'';
     var reg=r.region||'';
     var sm=(src&&med)?src+' / '+med:'';
     if(fSt&&reg!==fSt)return false;
@@ -514,13 +471,13 @@ function applyFilters(){
     return true;
   });
   var months=G.raw.months.filter(function(r){
-    if(fOri&&(r.session_source||r.sessionsource||'')!==fOri)return false;
+    if(fOri&&(r.sessionsource||'')!==fOri)return false;
     return true;
   });
   var first=G.raw.first.filter(function(r){
-    var src=r.firstusersource||r.first_user_source||'';
-    var med=r.firstusermedium||r.first_user_medium||'';
-    var camp=r.firstusercampaignname||r.first_user_campaign_name||'';
+    var src=r.firstusersource||'';
+    var med=r.firstusermedium||'';
+    var camp=r.firstusercampaignname||'';
     var sm=(src&&med)?src+' / '+med:'';
     if(fCamp&&camp!==fCamp)return false;
     if(fOri&&src!==fOri)return false;
@@ -529,9 +486,9 @@ function applyFilters(){
     return true;
   });
   var last=G.raw.last.filter(function(r){
-    var src=r.sessionsource||r.session_source||'';
-    var med=r.sessionmedium||r.session_medium||'';
-    var camp=r.sessioncampaignname||r.session_campaign_name||'';
+    var src=r.sessionsource||'';
+    var med=r.sessionmedium||'';
+    var camp=r.sessioncampaignname||'';
     var sm=(src&&med)?src+' / '+med:'';
     if(fCamp&&camp!==fCamp)return false;
     if(fOri&&src!==fOri)return false;
@@ -539,7 +496,7 @@ function applyFilters(){
     if(fSM&&sm!==fSM)return false;
     return true;
   });
-  var items=fCat?G.raw.items.filter(function(r){return(r.item_category||r.itemcategory||'')===fCat;}):G.raw.items;
+  var items=fCat?G.raw.items.filter(function(r){return(r.itemcategory||'')===fCat;}):G.raw.items;
   G.filtered={main:main,months:months,first:first,last:last,items:items};
   renderAll(G.filtered);
 }
@@ -560,9 +517,9 @@ function renderAll(d){
 function renderKPIs(data){
   var rev=0,cost=0,pur=0,sess=0;
   data.forEach(function(r){
-    rev +=safeN(r.purchase_revenue||r.purchaserevenue||0);
-    cost+=safeN(r.advertiser_ad_cost||r.advertiseradcost||0);
-    pur +=safeN(r.ecommerce_purchases||r.ecommercepurchases||0);
+    rev +=safeN(r.purchaserevenue||0);
+    cost+=safeN(r.advertiseradcost||0);
+    pur +=safeN(r.ecommercepurchases||0);
     sess+=safeN(r.sessions||0);
   });
   var roasV=cost>0?rev/cost:0;
@@ -595,11 +552,11 @@ function renderLine(data){
   showEmp('cLine','eLine',false);
   var months={};
   data.forEach(function(r){
-    var m=r.yearmonth||r.year_month||'';
+    var m=r.yearmonth||'';
     if(!m)return;
     if(!months[m])months[m]={rev:0,qty:0};
-    months[m].rev+=safeN(r.purchase_revenue||r.purchaserevenue||0);
-    months[m].qty+=safeN(r.ecommerce_purchases||r.ecommercepurchases||0);
+    months[m].rev+=safeN(r.purchaserevenue||0);
+    months[m].qty+=safeN(r.ecommercepurchases||0);
   });
   var keys=Object.keys(months).sort();
   var labels=keys.map(function(k){var y=k.slice(0,4),mo=k.slice(4,6);return new Date(y,parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});});
@@ -635,9 +592,9 @@ function renderDonut(data){
   destroyChart('donut');
   var map={};
   data.forEach(function(r){
-    var k=r.session_source||r.sessionsource||'(direct)';
+    var k=r.sessionsource||'(direct)';
     if(!map[k])map[k]=0;
-    map[k]+=safeN(r.purchase_revenue||r.purchaserevenue||0);
+    map[k]+=safeN(r.purchaserevenue||0);
   });
   var entries=Object.entries(map).filter(function(e){return e[1]>0;}).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
   if(!entries.length){showEmp('cDonut','eDonut',true);$('dLeg').innerHTML='';return;}
@@ -656,16 +613,12 @@ function renderDonut(data){
 
 function aggBy(data,keyFn,valFn){
   var map={};
-  data.forEach(function(r){
-    var k=keyFn(r);
-    if(!map[k])map[k]=0;
-    map[k]+=valFn(r);
-  });
+  data.forEach(function(r){var k=keyFn(r);if(!map[k])map[k]=0;map[k]+=valFn(r);});
   return Object.entries(map).filter(function(e){return e[1]>0;}).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
 }
 
 function renderOrigin(data){
-  var entries=aggBy(data,function(r){return r.session_source||r.sessionsource||'(direct)';},function(r){return safeN(r.purchase_revenue||r.purchaserevenue||0);});
+  var entries=aggBy(data,function(r){return r.sessionsource||'(direct)';},function(r){return safeN(r.purchaserevenue||0);});
   buildBarChart('ori','cOri','eOri',entries.map(function(e){return short(e[0]);}),entries.map(function(e){return e[1];}),entries.map(function(_,i){return getC(i);}),brl,true);
 }
 
@@ -673,10 +626,10 @@ function renderRoasChart(data){
   destroyChart('roas');
   var map={};
   data.forEach(function(r){
-    var k=r.session_source||r.sessionsource||'(direct)';
+    var k=r.sessionsource||'(direct)';
     if(!map[k])map[k]={rev:0,cost:0};
-    map[k].rev+=safeN(r.purchase_revenue||r.purchaserevenue||0);
-    map[k].cost+=safeN(r.advertiser_ad_cost||r.advertiseradcost||0);
+    map[k].rev+=safeN(r.purchaserevenue||0);
+    map[k].cost+=safeN(r.advertiseradcost||0);
   });
   var entries=Object.entries(map).filter(function(e){return e[1].cost>0;}).map(function(e){return[e[0],e[1].rev/e[1].cost];}).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
   if(!entries.length){showEmp('cRoas','eRoas',true);return;}
@@ -688,33 +641,38 @@ function renderRoasChart(data){
 }
 
 function renderCampaign(data){
-  var entries=aggBy(data,function(r){return r.session_campaign_name||r.sessioncampaignname||'(sem campanha)';},function(r){return safeN(r.purchase_revenue||r.purchaserevenue||0);});
+  var entries=aggBy(data,function(r){return r.sessioncampaignname||'(sem campanha)';},function(r){return safeN(r.purchaserevenue||0);});
   buildBarChart('camp','cCamp','eCamp',entries.map(function(e){return short(e[0]);}),entries.map(function(e){return e[1];}),entries.map(function(_,i){return getC(i);}),brl,true);
 }
 
 function renderFirst(data){
-  var entries=aggBy(data,function(r){return r.firstusercampaignname||r.first_user_campaign_name||'(sem campanha)';},function(r){return safeN(r.purchase_revenue||r.purchaserevenue||0);});
+  var entries=aggBy(data,function(r){return r.firstusercampaignname||'(sem campanha)';},function(r){return safeN(r.purchaserevenue||0);});
   buildBarChart('first','cFirst','eFirst',entries.map(function(e){return short(e[0]);}),entries.map(function(e){return e[1];}),entries.map(function(_,i){return getC(i);}),brl,true);
 }
 
 function renderLast(data){
-  var entries=aggBy(data,function(r){return r.sessioncampaignname||r.session_campaign_name||'(sem campanha)';},function(r){return safeN(r.purchase_revenue||r.purchaserevenue||0);});
+  var entries=aggBy(data,function(r){return r.sessioncampaignname||'(sem campanha)';},function(r){return safeN(r.purchaserevenue||0);});
   if(!entries.length){showEmp('cLast','eLast',true);return;}
   showEmp('cLast','eLast',false);
   var labels=entries.map(function(e){return short(e[0]);});
   var vals=entries.map(function(e){return e[1];});
-  G.charts.last=new Chart($('cLast').getContext('2d'),{type:'bar',data:{labels:labels,datasets:[{data:vals,backgroundColor:labels.map(function(_,i){return getC(i);}),borderRadius:6,borderSkipped:false}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return brl(c.raw);}}}},scales:{x:{grid:{color:gridColor()},ticks:{color:tickColor(),callback:function(v){return 'R$ '+num(v);}}},y:{grid:{display:false},ticks:{color:tickColor()}}}}});
+  G.charts.last=new Chart($('cLast').getContext('2d'),{
+    type:'bar',
+    data:{labels:labels,datasets:[{data:vals,backgroundColor:labels.map(function(_,i){return getC(i);}),borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return brl(c.raw);}}}},scales:{x:{grid:{color:gridColor()},ticks:{color:tickColor(),callback:function(v){return 'R$ '+num(v);}}},y:{grid:{display:false},ticks:{color:tickColor()}}}}
+  });
 }
+
 function renderTable(data){
   var map={};
   data.forEach(function(r){
-    var src=r.session_source||r.sessionsource||'(direct)';
-    var camp=r.session_campaign_name||r.sessioncampaignname||'(sem campanha)';
+    var src=r.sessionsource||'(direct)';
+    var camp=r.sessioncampaignname||'(sem campanha)';
     var k=src+'||'+camp;
     if(!map[k])map[k]={src:src,camp:camp,rev:0,cost:0,pur:0,sess:0};
-    map[k].rev +=safeN(r.purchase_revenue||r.purchaserevenue||0);
-    map[k].cost+=safeN(r.advertiser_ad_cost||r.advertiseradcost||0);
-    map[k].pur +=safeN(r.ecommerce_purchases||r.ecommercepurchases||0);
+    map[k].rev +=safeN(r.purchaserevenue||0);
+    map[k].cost+=safeN(r.advertiseradcost||0);
+    map[k].pur +=safeN(r.ecommercepurchases||0);
     map[k].sess+=safeN(r.sessions||0);
   });
   var rows=Object.values(map);
@@ -727,15 +685,12 @@ function renderTable(data){
   });
   $('tCount').textContent=rows.length+' linhas';
   var roasClass=function(v){return v>=4?'rg':v>=2?'ry':v>0?'rr':'rn';};
-  if(!rows.length){
-    $('tBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">Sem dados para os filtros selecionados</td></tr>';
-    return;
-  }
+  if(!rows.length){$('tBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">Sem dados para os filtros selecionados</td></tr>';return;}
   $('tBody').innerHTML=rows.map(function(r){
     var roas=r.cost>0?r.rev/r.cost:0;
     var tkt=r.pur>0?r.rev/r.pur:0;
     return '<tr>'
-      +'<td>'+( r.src||'—')+'</td>'
+      +'<td>'+(r.src||'—')+'</td>'
       +'<td>'+short(r.camp,30)+'</td>'
       +'<td>'+brl(r.rev)+'</td>'
       +'<td>'+(r.cost>0?brl(r.cost):'<span class="rn">—</span>')+'</td>'
@@ -755,15 +710,12 @@ function sortBy(col){
 
 function renderInsights(d){
   var data=d.main;
-  if(!data.length){
-    $('iGrid').innerHTML='<div class="iitem" style="--ic:#718096"><div class="ilbl">Aguardando</div><div class="itxt">Sem dados carregados.</div></div>';
-    return;
-  }
+  if(!data.length){$('iGrid').innerHTML='<div class="iitem" style="--ic:#718096"><div class="ilbl">Aguardando</div><div class="itxt">Sem dados carregados.</div></div>';return;}
   var rev=0,cost=0,pur=0,sess=0;
   data.forEach(function(r){
-    rev +=safeN(r.purchase_revenue||r.purchaserevenue||0);
-    cost+=safeN(r.advertiser_ad_cost||r.advertiseradcost||0);
-    pur +=safeN(r.ecommerce_purchases||r.ecommercepurchases||0);
+    rev +=safeN(r.purchaserevenue||0);
+    cost+=safeN(r.advertiseradcost||0);
+    pur +=safeN(r.ecommercepurchases||0);
     sess+=safeN(r.sessions||0);
   });
   var tkt=pur>0?rev/pur:0;
@@ -771,19 +723,19 @@ function renderInsights(d){
   var roas=cost>0?rev/cost:0;
   var oriMap={};
   data.forEach(function(r){
-    var k=r.session_source||r.sessionsource||'(direct)';
+    var k=r.sessionsource||'(direct)';
     if(!oriMap[k])oriMap[k]={rev:0,pur:0};
-    oriMap[k].rev+=safeN(r.purchase_revenue||r.purchaserevenue||0);
-    oriMap[k].pur+=safeN(r.ecommerce_purchases||r.ecommercepurchases||0);
+    oriMap[k].rev+=safeN(r.purchaserevenue||0);
+    oriMap[k].pur+=safeN(r.ecommercepurchases||0);
   });
   var bestOri=Object.entries(oriMap).sort(function(a,b){return b[1].rev-a[1].rev;})[0];
   var campMap={};
   data.forEach(function(r){
-    var k=r.session_campaign_name||r.sessioncampaignname||'';
+    var k=r.sessioncampaignname||'';
     if(!k||k==='(sem campanha)')return;
     if(!campMap[k])campMap[k]={rev:0,cost:0};
-    campMap[k].rev +=safeN(r.purchase_revenue||r.purchaserevenue||0);
-    campMap[k].cost+=safeN(r.advertiser_ad_cost||r.advertiseradcost||0);
+    campMap[k].rev +=safeN(r.purchaserevenue||0);
+    campMap[k].cost+=safeN(r.advertiseradcost||0);
   });
   var campEntries=Object.entries(campMap).sort(function(a,b){return b[1].rev-a[1].rev;});
   var bestCamp=campEntries[0];
