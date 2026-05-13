@@ -551,18 +551,10 @@ function renderLast(data){
   var entries=aggBy(data,function(r){return r.sessioncampaignname||r.session_campaign_name||'(sem campanha)';},function(r){return safeN(r.purchase_revenue||r.purchaserevenue||0);});
   if(!entries.length){showEmp('cLast','eLast',true);return;}
   showEmp('cLast','eLast',false);
-  var labels=entries.map(function(eContinue colando este trecho logo após onde parou:
-
-```javascript
-){return short(e[0]);});
+  var labels=entries.map(function(e){return short(e[0]);});
   var vals=entries.map(function(e){return e[1];});
-  G.charts.last=new Chart($('cLast').getContext('2d'),{
-    type:'bar',
-    data:{labels:labels,datasets:[{data:vals,backgroundColor:labels.map(function(_,i){return getC(i);}),borderRadius:6,borderSkipped:false}]},
-    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return brl(c.raw);}}}},scales:{x:{grid:{color:gridColor()},ticks:{color:tickColor(),callback:function(v){return 'R$ '+num(v);}}},y:{grid:{display:false},ticks:{color:tickColor()}}}}
-  });
+  G.charts.last=new Chart($('cLast').getContext('2d'),{type:'bar',data:{labels:labels,datasets:[{data:vals,backgroundColor:labels.map(function(_,i){return getC(i);}),borderRadius:6,borderSkipped:false}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return brl(c.raw);}}}},scales:{x:{grid:{color:gridColor()},ticks:{color:tickColor(),callback:function(v){return 'R$ '+num(v);}}},y:{grid:{display:false},ticks:{color:tickColor()}}}}});
 }
-
 function renderTable(data){
   var map={};
   data.forEach(function(r){
