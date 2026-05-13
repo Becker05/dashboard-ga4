@@ -907,6 +907,47 @@ function renderLast(data){
   var vals=entries.map(function(e){return e[1];});
   buildBarChart('last','cLast','eLast',labels,vals,labels.map(function(_,i){return getC(i);}),brl,false);
 }
+  function renderTable(data){
+  var map={};
+  data.forEach(function(r){
+    var src=r.sessionsource||'(direct)';
+    var camp=r.sessioncampaignname||'(sem campanha)';
+    var k=src+'||'+camp;
+    if(!map[k])map[k]={src:src,camp:camp,rev:0,cost:0,pur:0,sess:0};
+    map[k].rev +=safeN(r.purchaserevenue||0);
+    map[k].cost+=safeN(r.advertiseradcost||0);
+    map[k].pur +=safeN(r.ecommercepurchases||0);
+    map[k].sess+=safeN(r.sessions||0);
+  });
+  var rows=Object.values(map).filter(function(r){return r.rev>0||r.cost>0;});
+  var col=G.sortCol,asc=G.sortAsc;
+  rows.sort(function(a,b){
+    var va=[a.src,a.camp,a.rev,a.cost,a.cost>0?a.rev/a.cost:0,a.pur,a.pur>0?a.rev/a.pur:0,a.sess][col];
+    var vb=[b.src,b.camp,b.rev,b.cost,b.cost>0?b.rev/b.cost:0,b.pur,b.pur>0?b.rev/b.pur:0,b.sess][col];
+    if(typeof va==='string')return asc?va.localeCompare(vb):vb.localeCompare(va);
+    return asc?va-vb:vb-va;
+  });
+  $('tCount').textContent=rows.length+' linhas';
+  var roasClass=function(v){return v>=4?'rg':v>=2?'ry':v>0?'rr':'rn';};
+  if(!rows.length){
+    $('tBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">Sem dados para os filtros selecionados</td></tr>';
+    return;
+  }
+  $('tBody').innerHTML=rows.map(function(r){
+    var roas=r.cost>0?r.rev/r.cost:0;
+    var tkt=r.pur>0?r.rev/r.pur:0;
+    return '<tr>'
+      +'<td>'+(r.src||'—')+'</td>'
+      +'<td>'+short(r.camp,30)+'</td>'
+      +'<td>'+brl(r.rev)+'</td>'
+      +'<td>'+(r.cost>0?brl(r.cost):'<span class="rn">—</span>')+'</td>'
+      +'<td class="'+roasClass(roas)+'">'+(r.cost>0?roasF(roas):'<span class="rn">—</span>')+'</td>'
+      +'<td>'+num(r.pur)+'</td>'
+      +'<td>'+(r.pur>0?brl(tkt):'<span class="rn">—</span>')+'</td>'
+      +'<td>'+num(r.sess)+'</td>'
+      +'</tr>';
+  }).join('');
+}
 function sortBy(col){
   if(G.sortCol===col)G.sortAsc=!G.sortAsc;
   else{G.sortCol=col;G.sortAsc=false;}
