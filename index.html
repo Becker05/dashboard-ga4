@@ -351,69 +351,76 @@ async function fetchAll(){
 
   setLoad(true,'Buscando custos de mídia...');
 try{
-  var qc=await ga4ReqSafe({
-    dateRanges:[dr],
-    dimensions:[
-      {name:'sessionCampaignName'},
-      {name:'sessionSource'},
-      {name:'sessionMedium'}
-    ],
-    metrics:[
-      {name:'manualAdCost'},
-      {name:'advertiserAdClicks'},
-      {name:'advertiserAdImpressions'}
-    ],
-    limit:500
-  },tmo);
-  var cd=parseRep(qc);
-  console.log('✅ custo raw: '+cd.length+' linhas');
+  /* testa qual métrica de custo está disponível */
+  var metricasCusto=[
+    'manualAdCost',
+    'advertiserAdCost',
+    'sessionManualAdCost'
+  ];
+  var cd=[];
+  var metricaUsada='';
 
-  /* monta mapa de custo SEM duplicar por região */
-  var costMap={};
-  cd.forEach(function(c){
-    var camp=c.sessioncampaignname||'';
-    var src=c.sessionsource||'';
-    var med=c.sessionmedium||'';
-    var k=camp+'||'+src+'||'+med;
-    if(!costMap[k]){
-      costMap[k]={
-        camp:camp,
-        src:src,
-        med:med,
-        cost:0,
-        clicks:0,
-        impr:0
-      };
+  for(var mi=0;mi<metricasCusto.length;mi++){
+    try{
+      var qc=await ga4ReqSafe({
+        dateRanges:[dr],
+        dimensions:[
+          {name:'sessionCampaignName'},
+          {name:'sessionSource'},
+          {name:'sessionMedium'}
+        ],
+        metrics:[{name:metricasCusto[mi]}],
+        limit:500
+      },tmo);
+      var cdTemp=parseRep(qc);
+      var totalTemp=cdTemp.reduce(function(a,r){
+        var keys=Object.keys(r).filter(function(k){return k!=='sessioncampaignname'&&k!=='sessionsource'&&k!=='sessionmedium';});
+        return a+safeN(r[keys[0]]||0);
+      },0);
+      console.log('🔍 '+metricasCusto[mi]+': R$ '+totalTemp.toFixed(2));
+      if(totalTemp>0){
+        cd=cdTemp;
+        metricaUsada=metricasCusto[mi].toLowerCase().replace(/[^a-z0-9]/g,'');
+        console.log('✅ Usando métrica: '+metricasCusto[mi]);
+        break;
+      }
+    }catch(me){
+      console.warn('❌ '+metricasCusto[mi]+': '+me.message);
     }
-    costMap[k].cost +=safeN(c.manualadcost||0);
-    costMap[k].clicks+=safeN(c.advertiseradclicks||0);
-    costMap[k].impr  +=safeN(c.advertiseradimpressions||0);
-  });
+  }
 
-  /* aplica custo no main — cada chave só aplicada UMA vez */
-  var appliedKeys={};
-  G.raw.main.forEach(function(r){
-    var camp=r.sessioncampaignname||'';
-    var src=r.sessionsource||'';
-    var med=r.sessionmedium||'';
-    var k=camp+'||'+src+'||'+med;
-    if(costMap[k]&&!appliedKeys[k]){
-      r.advertiseradcost      =costMap[k].cost;
-      r.advertiseradclicks    =costMap[k].clicks;
-      r.advertiseradimpressions=costMap[k].impr;
-      appliedKeys[k]=true;
-    } else {
-      /* zera custo nas linhas duplicadas da mesma chave */
-      r.advertiseradcost      =0;
-      r.advertiseradclicks    =0;
-      r.advertiseradimpressions=0;
-    }
-  });
+  if(cd.length>0&&metricaUsada){
+    /* monta mapa de custo sem duplicar por região */
+    var costMap={};
+    cd.forEach(function(c){
+      var camp=c.sessioncampaignname||'';
+      var src=c.sessionsource||'';
+      var med=c.sessionmedium||'';
+      var k=camp+'||'+src+'||'+med;
+      if(!costMap[k])costMap[k]={cost:0};
+      costMap[k].cost+=safeN(c[metricaUsada]||0);
+    });
 
-  /* log de verificação */
-  var totalCost=Object.values(costMap).reduce(function(a,b){return a+b.cost;},0);
-  console.log('✅ Custo total aplicado: R$ '+totalCost.toFixed(2));
+    /* aplica custo no main — cada chave só uma vez */
+    var appliedKeys={};
+    G.raw.main.forEach(function(r){
+      var camp=r.sessioncampaignname||'';
+      var src=r.sessionsource||'';
+      var med=r.sessionmedium||'';
+      var k=camp+'||'+src+'||'+med;
+      if(costMap[k]&&!appliedKeys[k]){
+        r.advertiseradcost=costMap[k].cost;
+        appliedKeys[k]=true;
+      }else{
+        r.advertiseradcost=0;
+      }
+    });
 
+    var totalCost=Object.values(costMap).reduce(function(a,b){return a+b.cost;},0);
+    console.log('✅ Custo total aplicado: R$ '+totalCost.toFixed(2));
+  }else{
+    console.warn('⚠️ Nenhuma métrica de custo retornou dados.');
+  }
 }catch(ce){
   console.warn('⚠️ Custo indisponível:',ce.message);
 }
@@ -688,6 +695,7 @@ function renderFirst(data){
 }
 
 function renderLast(data){
+  destroyChart('last');
   var entries=aggBy(data,function(r){return r.sessioncampaignname||'(sem campanha)';},function(r){return safeN(r.purchaserevenue||0);});
   if(!entries.length){showEmp('cLast','eLast',true);return;}
   showEmp('cLast','eLast',false);
