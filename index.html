@@ -235,8 +235,7 @@ tbody td:first-child{color:var(--text);font-weight:500}
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Campanha</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutCamp" height="180"></canvas><div class="empty" id="eDonutCamp" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegCamp" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Estado</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutSt" height="180"></canvas><div class="empty" id="eDonutSt" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegSt" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Categoria</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutCat" height="180"></canvas><div class="empty" id="eDonutCat" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegCat" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">ROAS por Campanha</div><div class="csub">Campanhas com custo atribuído</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><div class="roas-grid" id="roasGrid"><div class="empty" id="eRoas" style="display:flex"><div class="eico">💸</div><div class="ettl">Sem custo atribuído</div></div></div></div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Vendas por Campanha</div><div class="csub">Top campanhas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cCamp" height="250"></canvas><div class="empty" id="eCamp" style="display:none"><div class="eico">📣</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c12"><div class="chead"><div><div class="ctitle">ROAS por Campanha</div><div class="csub">Campanhas com custo atribuído</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><div class="roas-grid" id="roasGrid"><div class="empty" id="eRoas" style="display:flex"><div class="eico">💸</div><div class="ettl">Sem custo atribuído</div></div></div></div>
   <div class="ccard c6"><div class="chead"><div><div class="ctitle">First Click</div><div class="csub">Primeiro toque do usuário</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cFirst" height="250"></canvas><div class="empty" id="eFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
   <div class="ccard c6"><div class="chead"><div><div class="ctitle">Last Click — Campanhas</div><div class="csub">Último toque antes da compra</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cLast" height="220"></canvas><div class="empty" id="eLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
 </div>
@@ -631,7 +630,6 @@ function renderAll(d){
   renderDonutByKey('st','cDonutSt','eDonutSt','dLegSt',d.states,function(r){return r.region||'(outros)';},function(r){return safeN(r.purchaserevenue||0);});
   renderDonutByKey('cat','cDonutCat','eDonutCat','dLegCat',d.items,function(r){return r.itemcategory||'(sem categoria)';},function(r){return safeN(r.itemrevenue||0);});
   renderDonutByKey('camp2','cDonutCamp','eDonutCamp','dLegCamp',d.main,function(r){return r.sessioncampaignname||'(sem campanha)';});  renderRoasChart(d.main);
-  renderCampaign(d.main);
   renderFirst(d.first);
   renderLast(d.last);
   renderTable(d.main);
@@ -1007,11 +1005,6 @@ function renderRoasChart(data){
     grid.appendChild(card);
   });
 }
-  function renderCampaign(data){
-  var entries=aggBy(data,function(r){return r.sessioncampaignname||'(sem campanha)';},function(r){return safeN(r.purchaserevenue||0);});
-  buildBarChart('camp','cCamp','eCamp',entries.map(function(e){return short(e[0]);}),entries.map(function(e){return e[1];}),entries.map(function(_,i){return getC(i);}),brl,true);
-}
-
 function renderFirst(data){
   var entries=aggBy(data,function(r){return r.firstusercampaignname||'(sem campanha)';},function(r){return safeN(r.purchaserevenue||0);});
   buildBarChart('first','cFirst','eFirst',entries.map(function(e){return short(e[0]);}),entries.map(function(e){return e[1];}),entries.map(function(_,i){return getC(i);}),brl,true);
