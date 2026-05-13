@@ -162,12 +162,6 @@ tbody td:first-child{color:var(--text);font-weight:500}
   .funnel-num{min-width:48px;font-size:.7rem}
   .farrow-line span:first-child{display:none}
 }
-<!-- SESSÕES POR CAMPANHA -->
-<div class="cgrid" id="sessGrid">
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — First Click</div><div class="csub">Campanhas que trouxeram mais sessões</div></div></div><canvas id="cSessFirst" height="250"></canvas><div class="empty" id="eSessFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — Last Click</div><div class="csub">Campanhas no último toque</div></div></div><canvas id="cSessLast" height="250"></canvas><div class="empty" id="eSessLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
-</div>
-
   /* ROAS Cards */
 .roas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;padding:4px 0}
 .roas-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;transition:all .2s}
@@ -271,6 +265,14 @@ tbody td:first-child{color:var(--text);font-weight:500}
     <div style="text-align:center;padding:40px;color:var(--text3)">Aguardando dados...</div>
   </div>
 </div>
+
+<!-- SESSÕES POR CAMPANHA -->
+<div class="cgrid" id="sessGrid">
+  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — First Click</div><div class="csub">Campanhas que trouxeram mais sessões</div></div></div><canvas id="cSessFirst" height="250"></canvas><div class="empty" id="eSessFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — Last Click</div><div class="csub">Campanhas no último toque</div></div></div><canvas id="cSessLast" height="250"></canvas><div class="empty" id="eSessLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
+</div>
+
+<!-- TABELA -->
 <div class="tcard">
   <div class="chead"><div><div class="ctitle">Tabela Executiva</div><div class="csub">Origem × Campanha</div></div><span id="tCount" style="font-size:.72rem;background:rgba(0,0,0,.05);padding:3px 10px;border-radius:12px;color:var(--text3)">0 linhas</span></div>
   <div class="twrap"><table><thead><tr><th onclick="sortBy(0)">Origem ↕</th><th onclick="sortBy(1)">Campanha ↕</th><th onclick="sortBy(2)">Vendas R$ ↕</th><th onclick="sortBy(3)">Custo R$ ↕</th><th onclick="sortBy(4)">ROAS ↕</th><th onclick="sortBy(5)">Compras ↕</th><th onclick="sortBy(6)">Ticket ↕</th><th onclick="sortBy(7)">Sessões ↕</th></tr></thead><tbody id="tBody"><tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">Autentique para visualizar os dados</td></tr></tbody></table></div>
