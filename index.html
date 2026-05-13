@@ -544,49 +544,8 @@ function applyFilters(){
   };
   renderAll(G.filtered);
 }
-  var months=G.raw.months.filter(function(r){
-    if(fOri&&(r.sessionsource||'')!==fOri)return false;
-    return true;
-  });
-  /* se filtrou campanha, reconstrói histórico a partir do main filtrado */
-  if(fCamp||fMed||fSM||fChan||fSt){
-    var periodMap={};
-    var useDia=G.raw.useDia;
-    main.forEach(function(r){
-      var k=useDia?(r.date||''):(r.yearmonth||r.sessionsource||'');
-      /* histórico vem de query separada sem date/yearmonth no main */
-      /* usa months já filtrado por origem como melhor aproximação */
-    });
-    /* usa months filtrado pela origem como proxy */
-  }
-  var first=G.raw.first.filter(function(r){
-    var src=r.firstusersource||'';
-    var med=r.firstusermedium||'';
-    var camp=r.firstusercampaignname||'';
-    var sm=(src&&med)?src+' / '+med:'';
-    if(fCamp&&camp!==fCamp)return false;
-    if(fOri&&src!==fOri)return false;
-    if(fMed&&med!==fMed)return false;
-    if(fSM&&sm!==fSM)return false;
-    return true;
-  });
-  var last=G.raw.last.filter(function(r){
-    var src=r.sessionsource||'';
-    var med=r.sessionmedium||'';
-    var camp=r.sessioncampaignname||'';
-    var sm=(src&&med)?src+' / '+med:'';
-    if(fCamp&&camp!==fCamp)return false;
-    if(fOri&&src!==fOri)return false;
-    if(fMed&&med!==fMed)return false;
-    if(fSM&&sm!==fSM)return false;
-    return true;
-  });
-  var items=fCat?G.raw.items.filter(function(r){return(r.itemcategory||'')===fCat;}):G.raw.items;
-  G.filtered={main:main,months:months,first:first,last:last,items:items};
-  renderAll(G.filtered);
-}
 
-ffunction renderAll(d){
+function renderAll(d){
   renderKPIs(d.main);
   renderLine(d.months);
   renderDonut(d.main);
@@ -602,7 +561,6 @@ ffunction renderAll(d){
   renderTable(d.main);
   renderInsights(d);
 }
-
 function renderKPIs(data){
   var rev=0,cost=0,pur=0,sess=0;
   data.forEach(function(r){
@@ -639,9 +597,9 @@ function renderLine(data){
   destroyChart('line');
   if(!data||!data.length){showEmp('cLine','eLine',true);return;}
   showEmp('cLine','eLine',false);
-  var sub=$('lineSubtitle');
-if(sub)sub.textContent=useDia?'Dia a dia':'Evolução mensal';
   var useDia=G.raw.useDia;
+  var sub=$('lineSubtitle');
+  if(sub)sub.textContent=useDia?'Dia a dia':'Evolução mensal';
   var periods={};
   data.forEach(function(r){
     var k=useDia?(r.date||''):(r.yearmonth||'');
@@ -736,7 +694,6 @@ if(sub)sub.textContent=useDia?'Dia a dia':'Evolução mensal';
     }
   });
 }
-
 function buildBarChart(key,canvasId,emptyId,labels,vals,colors,fmt,horizontal){
   destroyChart(key);
   if(!labels.length){showEmp(canvasId,emptyId,true);return;}
@@ -837,6 +794,16 @@ function renderDonut(data){
       }
     }
   });
+  $('dLeg').innerHTML=labels.map(function(l,i){
+    var p=((vals[i]/total)*100).toFixed(1);
+    return '<div style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text2);min-width:120px">'
+      +'<span style="width:10px;height:10px;border-radius:3px;background:'+colors[i]+';flex-shrink:0"></span>'
+      +'<span style="flex:1">'+short(l,18)+'</span>'
+      +'<span style="font-weight:700;color:var(--text)">'+p+'%</span>'
+      +'</div>';
+  }).join('');
+}
+
 function renderDonutByKey(key,canvasId,emptyId,legId,data,keyFn,valFn){
   destroyChart('donut_'+key);
   valFn=valFn||function(r){return safeN(r.purchaserevenue||0);};
@@ -913,18 +880,7 @@ function renderDonutByKey(key,canvasId,emptyId,legId,data,keyFn,valFn){
       +'</div>';
   }).join('');
 }
-  
-  $('dLeg').innerHTML=labels.map(function(l,i){
-    var p=((vals[i]/total)*100).toFixed(1);
-    return '<div style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text2);min-width:120px">'
-      +'<span style="width:10px;height:10px;border-radius:3px;background:'+colors[i]+';flex-shrink:0"></span>'
-      +'<span style="flex:1">'+short(l,18)+'</span>'
-      +'<span style="font-weight:700;color:var(--text)">'+p+'%</span>'
-      +'</div>';
-  }).join('');
-}
-
-function aggBy(data,keyFn,valFn,includeZero){
+  function aggBy(data,keyFn,valFn,includeZero){
   var map={};
   data.forEach(function(r){var k=keyFn(r);if(!map[k])map[k]=0;map[k]+=valFn(r);});
   return Object.entries(map)
