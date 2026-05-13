@@ -121,9 +121,17 @@ tbody td:first-child{color:var(--text);font-weight:500}
   .kval{font-size:1.2rem;}
   .fgrid{grid-template-columns:1fr;}
 }
+.ccard{cursor:grab;}
+.ccard:active{cursor:grabbing;}
+.sortable-ghost{opacity:.35;border:2px dashed var(--accent);}
+.sortable-chosen{box-shadow:0 8px 32px rgba(79,70,229,.25);}
+.drag-handle{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;background:rgba(0,0,0,.05);color:var(--text3);font-size:13px;cursor:grab;margin-left:auto;flex-shrink:0;}
+[data-theme=dark] .drag-handle{background:rgba(255,255,255,.08);}
+.drag-handle:hover{background:rgba(79,70,229,.15);color:var(--accent);}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </head>
 <body data-theme="light">
 <div class="lov" id="LOV"><div class="lbox"><div class="lsp"></div><div class="ltxt">Carregando dados do GA4</div><div class="lstp" id="LSTP">Aguarde...</div></div></div>
@@ -184,7 +192,7 @@ tbody td:first-child{color:var(--text);font-weight:500}
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Estado</div><div class="csub">% das vendas</div></div></div><canvas id="cDonutSt" height="180"></canvas><div class="empty" id="eDonutSt" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegSt" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Categoria</div><div class="csub">% das vendas</div></div></div><canvas id="cDonutCat" height="180"></canvas><div class="empty" id="eDonutCat" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegCat" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Origem</div><div class="csub">% das vendas</div></div></div><canvas id="cDonut" height="180"></canvas><div class="empty" id="eDonut" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLeg" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Vendas por Origem</div><div class="csub">Receita por source</div></div></div><canvas id="cOri" height="250"></canvas><div class="empty" id="eOri" style="display:none"><div class="eico">📊</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Campanha</div><div class="csub">% das vendas</div></div></div><canvas id="cDonutCamp" height="180"></canvas><div class="empty" id="eDonutCamp" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegCamp" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c6"><div class="chead"><div><div class="ctitle">ROAS por Origem</div><div class="csub">Origens com custo</div></div></div><canvas id="cRoas" height="250"></canvas><div class="empty" id="eRoas" style="display:none"><div class="eico">💸</div><div class="ettl">Sem custo atribuído</div></div></div>
   <div class="ccard c6"><div class="chead"><div><div class="ctitle">Vendas por Campanha</div><div class="csub">Top campanhas</div></div></div><canvas id="cCamp" height="250"></canvas><div class="empty" id="eCamp" style="display:none"><div class="eico">📣</div><div class="ettl">Sem dados</div></div></div>
   <div class="ccard c6"><div class="chead"><div><div class="ctitle">First Click</div><div class="csub">Primeiro toque do usuário</div></div></div><canvas id="cFirst" height="250"></canvas><div class="empty" id="eFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
@@ -553,8 +561,7 @@ function renderAll(d){
   renderDonutByKey('med','cDonutMed','eDonutMed','dLegMed',d.main,function(r){return r.sessionmedium||'(none)';});
   renderDonutByKey('st','cDonutSt','eDonutSt','dLegSt',d.states,function(r){return r.region||'(outros)';},function(r){return safeN(r.purchaserevenue||0);});
   renderDonutByKey('cat','cDonutCat','eDonutCat','dLegCat',d.items,function(r){return r.itemcategory||'(sem categoria)';},function(r){return safeN(r.itemrevenue||0);});
-  renderOrigin(d.main);
-  renderRoasChart(d.main);
+  renderDonutByKey('camp2','cDonutCamp','eDonutCamp','dLegCamp',d.main,function(r){return r.sessioncampaignname||'(sem campanha)';});  renderRoasChart(d.main);
   renderCampaign(d.main);
   renderFirst(d.first);
   renderLast(d.last);
@@ -888,12 +895,6 @@ function renderDonutByKey(key,canvasId,emptyId,legId,data,keyFn,valFn){
     .sort(function(a,b){return b[1]-a[1];})
     .slice(0,10);
 }
-
-function renderOrigin(data){
-  var entries=aggBy(data,function(r){return r.sessionsource||'(direct)';},function(r){return safeN(r.purchaserevenue||0);});
-  buildBarChart('ori','cOri','eOri',entries.map(function(e){return short(e[0]);}),entries.map(function(e){return e[1];}),entries.map(function(_,i){return getC(i);}),brl,true);
-}
-
 function renderRoasChart(data){
   destroyChart('roas');
   var map={};
