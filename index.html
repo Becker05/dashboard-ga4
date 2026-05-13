@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f46e5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GA4 Dash">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Dashboard GA4 — Danny Closet</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -1366,6 +1373,15 @@ window.addEventListener('load',function(){
     }
   },800);
 });
+</script>
+  <script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/dashboard-ga4/sw.js')
+      .then(function(r){ console.log('✅ SW registrado:', r.scope); })
+      .catch(function(e){ console.warn('❌ SW erro:', e); });
+  });
+}
 </script>
 </body>
 </html>
