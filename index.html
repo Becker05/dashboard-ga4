@@ -6,6 +6,7 @@
 <title>Dashboard GA4 — Danny Closet</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#f4f6fb;--card:#fff;--border:#e2e8f0;--text:#1a202c;--text2:#4a5568;--text3:#718096;--accent:#4f46e5;--accent2:#7c3aed;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);--r:14px;--r2:8px;--font:'Segoe UI',system-ui,sans-serif}
@@ -53,15 +54,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);transition:b
 .gsi-btn svg{width:18px;height:18px;flex-shrink:0}
 .hint-box{font-size:.73rem;color:var(--text3);margin-top:12px;padding:10px 14px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;line-height:1.7}
 .hint-box code{background:rgba(0,0,0,.07);padding:1px 5px;border-radius:3px;font-size:.71rem;word-break:break-all}
-.fcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 22px;box-shadow:var(--shadow);margin-bottom:22px}
-.ftop{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.fcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 22px;box-shadow:var(--shadow);margin-bottom:22px;position:relative;z-index:10;}.ftop{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
 .flbl{font-size:.71rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)}
-.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;align-items:end;}
 .fgrp{display:flex;flex-direction:column;gap:4px}
 .fgl{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text3)}
 .fsel{padding:7px 26px 7px 9px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.8rem;font-family:var(--font);cursor:pointer;outline:none;transition:all .2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
-.drange{display:flex;gap:5px;align-items:center}
-.di{flex:1;padding:7px 8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.76rem;font-family:var(--font);outline:none}
+.drange{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.di{flex:1;min-width:100px;padding:7px 8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.76rem;font-family:var(--font);outline:none;}
 .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:22px}
 .kcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:all .2s}
 .kcard:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.1)}
@@ -107,6 +107,20 @@ tbody td:first-child{color:var(--text);font-weight:500}
 .lsp{width:44px;height:44px;border:4px solid var(--border);border-top-color:#4f46e5;border-radius:50%;animation:spin .85s linear infinite;margin:0 auto 14px}
 .ltxt{font-size:.9rem;font-weight:600}
 .lstp{font-size:.74rem;color:var(--text3);margin-top:4px}
+@media(max-width:768px){
+  .fgrid{grid-template-columns:repeat(2,1fr);}
+  .cgrid{display:flex;flex-direction:column;}
+  .kgrid{grid-template-columns:repeat(2,1fr);}
+  .hdr{flex-direction:column;align-items:flex-start;}
+  .hdr-r{width:100%;justify-content:space-between;}
+  .twrap{font-size:.75rem;}
+  tbody td{padding:8px 6px;}
+}
+@media(max-width:480px){
+  .kgrid{grid-template-columns:1fr 1fr;}
+  .kval{font-size:1.2rem;}
+  .fgrid{grid-template-columns:1fr;}
+}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 </style>
@@ -325,16 +339,25 @@ async function fetchAll(){
     G.raw.main=parseRep(q1);
     console.log('✅ main: '+G.raw.main.length+' linhas');
 
-    setLoad(true,'Buscando histórico mensal...');
-    var q2=await ga4ReqSafe({
-      dateRanges:[dr],
-      dimensions:[{name:'yearMonth'},{name:'sessionSource'}],
-      metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],
-      orderBys:[{dimension:{dimensionName:'yearMonth'}}],
-      limit:500
-    },tmo);
-    G.raw.months=parseRep(q2);
-    console.log('✅ months: '+G.raw.months.length+' linhas');
+    setLoad(true,'Buscando histórico...');
+var useDia=dias<61;
+var q2=await ga4ReqSafe({
+  dateRanges:[dr],
+  dimensions:[
+    {name: useDia?'date':'yearMonth'},
+    {name:'sessionSource'}
+  ],
+  metrics:[
+    {name:'purchaseRevenue'},
+    {name:'ecommercePurchases'},
+    {name:'sessions'}
+  ],
+  orderBys:[{dimension:{dimensionName: useDia?'date':'yearMonth'}}],
+  limit:500
+},tmo);
+G.raw.months=parseRep(q2);
+G.raw.useDia=useDia;
+console.log('✅ histórico: '+G.raw.months.length+' linhas · modo:'+(useDia?'dia':'mês'));
 
     setLoad(true,'Buscando produtos, campanhas e estados...');
     var res=await Promise.all([
@@ -538,6 +561,17 @@ function applyFilters(){
     if(fOri&&(r.sessionsource||'')!==fOri)return false;
     return true;
   });
+  /* se filtrou campanha, reconstrói histórico a partir do main filtrado */
+  if(fCamp||fMed||fSM||fChan||fSt){
+    var periodMap={};
+    var useDia=G.raw.useDia;
+    main.forEach(function(r){
+      var k=useDia?(r.date||''):(r.yearmonth||r.sessionsource||'');
+      /* histórico vem de query separada sem date/yearmonth no main */
+      /* usa months já filtrado por origem como melhor aproximação */
+    });
+    /* usa months filtrado pela origem como proxy */
+  }
   var first=G.raw.first.filter(function(r){
     var src=r.firstusersource||'';
     var med=r.firstusermedium||'';
@@ -667,14 +701,62 @@ function renderDonut(data){
   var vals=entries.map(function(e){return e[1];});
   var colors=labels.map(function(_,i){return getC(i);});
   var total=vals.reduce(function(a,b){return a+b;},0);
+  var isDark=getDark();
   G.charts.donut=new Chart($('cDonut').getContext('2d'),{
     type:'doughnut',
-    data:{labels:labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'var(--card)'}]},
-    options:{responsive:true,cutout:'65%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.label+': '+brl(c.raw)+' ('+((c.raw/total)*100).toFixed(1)+'%)';}}}}}
+    data:{
+      labels:labels,
+      datasets:[{
+        data:vals,
+        backgroundColor:colors,
+        borderWidth:3,
+        borderColor:isDark?'#1e2130':'#fff',
+        hoverBorderWidth:4,
+        hoverOffset:6
+      }]
+    },
+    options:{
+      responsive:true,
+      cutout:'60%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:isDark?'#1e2130':'#fff',
+          titleColor:isDark?'#f1f5f9':'#1a202c',
+          bodyColor:isDark?'#94a3b8':'#4a5568',
+          borderColor:'rgba(0,0,0,0.1)',
+          borderWidth:1,
+          padding:10,
+          callbacks:{
+            label:function(c){
+              return ' '+brl(c.raw)+' ('+((c.raw/total)*100).toFixed(1)+'%)';
+            }
+          }
+        },
+        /* labels dentro do gráfico */
+        datalabels:{
+          display:function(ctx){
+            return(ctx.dataset.data[ctx.dataIndex]/total)>0.05;
+          },
+          color:'#fff',
+          font:{weight:'700',size:11},
+          formatter:function(v){
+            return ((v/total)*100).toFixed(0)+'%';
+          }
+        }
+      }
+    }
   });
-  $('dLeg').innerHTML=labels.map(function(l,i){return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:.68rem;color:var(--text2)"><span style="width:8px;height:8px;border-radius:50%;background:'+colors[i]+';flex-shrink:0"></span>'+short(l,16)+'</span>';}).join('');
+  /* legenda manual melhorada */
+  $('dLeg').innerHTML=labels.map(function(l,i){
+    var pct=((vals[i]/total)*100).toFixed(1);
+    return '<div style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text2);min-width:120px">'
+      +'<span style="width:10px;height:10px;border-radius:3px;background:'+colors[i]+';flex-shrink:0"></span>'
+      +'<span style="flex:1">'+short(l,18)+'</span>'
+      +'<span style="font-weight:700;color:var(--text)">'+pct+'%</span>'
+      +'</div>';
+  }).join('');
 }
-
 function aggBy(data,keyFn,valFn,includeZero){
   var map={};
   data.forEach(function(r){var k=keyFn(r);if(!map[k])map[k]=0;map[k]+=valFn(r);});
@@ -819,7 +901,7 @@ function renderInsights(d){
   if(campEntries.length>1){var worst=campEntries[campEntries.length-1];insights.push({ic:'#ef4444',lbl:'⚠️ Atenção',txt:'Campanha <span class="iv">'+short(worst[0],28)+'</span> teve menor receita: <span class="iv">'+brl(worst[1].rev)+'</span>. Avalie otimizar.'});}
   $('iGrid').innerHTML=insights.map(function(i){return '<div class="iitem" style="--ic:'+i.ic+'"><div class="ilbl">'+i.lbl+'</div><div class="itxt">'+i.txt+'</div></div>';}).join('');
 }
-
+Chart.register(ChartDataLabels);
 window.addEventListener('load',function(){setTimeout(initGsi,500);});
 </script>
 </body>
