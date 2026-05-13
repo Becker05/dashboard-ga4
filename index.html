@@ -279,63 +279,194 @@ function parseRep(rep){
     return o;
   });
 }
+  const CACHE={};
+const CACHE_TTL=5*60*1000; // 5 minutos
 
-async function fetchAll(){
-  setLoad(true,'Diagnosticando...');
-  $('btnRef').disabled=true;
-  var dr=getDR();
-  var queries=[
-    {name:'main',body:{dateRanges:[dr],dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'sessionCampaignName'},{name:'sessionDefaultChannelGrouping'},{name:'region'}],metrics:[{name:'sessions'},{name:'purchaseRevenue'},{name:'ecommercePurchases'}],limit:5000}},
-    {name:'months',body:{dateRanges:[dr],dimensions:[{name:'yearMonth'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],orderBys:[{dimension:{dimensionName:'yearMonth'}}],limit:500}},
-    {name:'items',body:{dateRanges:[dr],dimensions:[{name:'itemCategory'},{name:'itemName'}],metrics:[{name:'itemsPurchased'},{name:'itemRevenue'}],limit:500}},
-    {name:'first',body:{dateRanges:[dr],dimensions:[{name:'firstUserCampaignName'},{name:'firstUserSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'}],limit:500}},
-    {name:'last',body:{dateRanges:[dr],dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'}],limit:500}},
-    {name:'states',body:{dateRanges:[dr],dimensions:[{name:'region'}],metrics:[{name:'purchaseRevenue'},{name:'sessions'}],limit:200}}
-  ];
-  var results={main:[],months:[],items:[],first:[],last:[],states:[]};
-  for(var i=0;i<queries.length;i++){
-    try{
-      var resp=await ga4Req(queries[i].body);
-      results[queries[i].name]=parseRep(resp);
-      console.log('✅ '+queries[i].name+': '+results[queries[i].name].length+' linhas');
-    }catch(err){
-      console.error('❌ '+queries[i].name+': '+err.message);
-      results[queries[i].name]=[];
-    }
+async function ga4ReqSafe(body,timeoutMs=15000){
+  var cacheKey=JSON.stringify(body)+G.propId;
+  var now=Date.now();
+  if(CACHE[cacheKey]&&(now-CACHE[cacheKey].ts)<CACHE_TTL){
+    console.log('📦 Cache hit');
+    return CACHE[cacheKey].data;
   }
-  /* custo separado */
+  var url='https://analyticsdata.googleapis.com/v1beta/properties/'+G.propId+':runReport';
+  var controller=new AbortController();
+  var timer=setTimeout(function(){controller.abort();},timeoutMs);
   try{
-    var cr=await ga4Req({dateRanges:[dr],dimensions:[{name:'sessionSource'},{name:'sessionCampaignName'}],metrics:[{name:'advertiserAdCost'}],limit:500});
-    var cd=parseRep(cr);
-    console.log('✅ custo: '+cd.length+' linhas');
-    cd.forEach(function(c){
-      var src=c.sessionsource||'';
-      var camp=c.sessioncampaignname||'';
-      var cost=safeN(c.advertiseradcost||0);
-      if(cost>0){
-        results.main.forEach(function(r){
-          if((r.sessionsource||'')=== src&&(r.sessioncampaignname||'')===camp){r.advertiseradcost=(safeN(r.advertiseradcost||0)+cost);}
-        });
-      }
+    var r=await fetch(url,{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+G.token,'Content-Type':'application/json'},
+      body:JSON.stringify(body),
+      signal:controller.signal
     });
-  }catch(e){console.warn('⚠️ custo: '+e.message);}
+    clearTimeout(timer);
+    if(!r.ok){
+      var e=await r.json().catch(function(){return{};});
+      var m=(e&&e.error&&e.error.message)||'HTTP '+r.status;
+      if(r.status===401)throw new Error('Token expirado. Reconecte.');
+      if(r.status===403)throw new Error('Sem permissão. Verifique o Property ID.');
+      throw new Error(m);
+    }
+    var data=await r.json();
+    CACHE[cacheKey]={ts:now,data:data};
+    return data;
+  }catch(err){
+    clearTimeout(timer);
+    if(err.name==='AbortError')throw new Error('Timeout: requisição demorou mais de '+Math.round(timeoutMs/1000)+'s. Tente um período menor.');
+    throw err;
+  }
+}
+async function fetchAll(){
+  setLoad(true,'Iniciando...');
+  $('btnRef').disabled=true;
+  try{
+    var dr=getDR();
+    var dias=getDias();
+    /* timeout maior para períodos longos */
+    var tmo=dias<=30?12000:dias<=90?20000:30000;
 
-  G.raw.main=results.main;
-  G.raw.months=results.months;
-  G.raw.items=results.items;
-  G.raw.first=results.first;
-  G.raw.last=results.last;
-  G.raw.states=results.states;
-  populateFilters();
-  applyFilters();
-  $('lastUpd').textContent='⏱ '+new Date().toLocaleString('pt-BR');
-  setSt('gSt','o','✅ '+G.raw.main.length+' registros carregados.');
-  setTimeout(function(){hideSt('gSt');},6000);
-  setLoad(false);
-  $('btnRef').disabled=false;
+    setLoad(true,'Buscando sessões e vendas...');
+    var q1=await ga4ReqSafe({
+      dateRanges:[dr],
+      dimensions:[
+        {name:'sessionSource'},
+        {name:'sessionMedium'},
+        {name:'sessionCampaignName'},
+        {name:'sessionDefaultChannelGrouping'},
+        {name:'region'}
+      ],
+      metrics:[
+        {name:'sessions'},
+        {name:'purchaseRevenue'},
+        {name:'ecommercePurchases'},
+        {name:'activeUsers'}
+      ],
+      limit:5000
+    },tmo);
+    G.raw.main=parseRep(q1);
+    setLoad(true,'Buscando histórico mensal...');
+
+    var q2=await ga4ReqSafe({
+      dateRanges:[dr],
+      dimensions:[{name:'yearMonth'},{name:'sessionSource'}],
+      metrics:[
+        {name:'purchaseRevenue'},
+        {name:'ecommercePurchases'},
+        {name:'sessions'}
+      ],
+      orderBys:[{dimension:{dimensionName:'yearMonth'}}],
+      limit:500
+    },tmo);
+    G.raw.months=parseRep(q2);
+    setLoad(true,'Buscando produtos...');
+
+    var [q3,q4,q5,q6]=await Promise.all([
+      ga4ReqSafe({
+        dateRanges:[dr],
+        dimensions:[{name:'itemCategory'},{name:'itemName'}],
+        metrics:[{name:'itemsPurchased'},{name:'itemRevenue'}],
+        limit:500
+      },tmo).catch(function(){return null;}),
+      ga4ReqSafe({
+        dateRanges:[dr],
+        dimensions:[{name:'firstUserCampaignName'},{name:'firstUserSource'}],
+        metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],
+        limit:500
+      },tmo).catch(function(){return null;}),
+      ga4ReqSafe({
+        dateRanges:[dr],
+        dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'}],
+        metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],
+        limit:500
+      },tmo).catch(function(){return null;}),
+      ga4ReqSafe({
+        dateRanges:[dr],
+        dimensions:[{name:'region'}],
+        metrics:[{name:'purchaseRevenue'},{name:'sessions'},{name:'ecommercePurchases'}],
+        limit:200
+      },tmo).catch(function(){return null;})
+    ]);
+    G.raw.items =q3?parseRep(q3):[];
+    G.raw.first =q4?parseRep(q4):[];
+    G.raw.last  =q5?parseRep(q5):[];
+    G.raw.states=q6?parseRep(q6):[];
+
+    /* custo — separado pois pode não existir */
+    setLoad(true,'Buscando custos...');
+    try{
+      var qc=await ga4ReqSafe({
+        dateRanges:[dr],
+        dimensions:[
+          {name:'sessionSource'},
+          {name:'sessionMedium'},
+          {name:'sessionCampaignName'}
+        ],
+        metrics:[
+          {name:'advertiserAdCost'},
+          {name:'advertiserAdClicks'},
+          {name:'advertiserAdImpressions'}
+        ],
+        limit:500
+      },tmo);
+      var cd=parseRep(qc);
+      console.log('✅ Custo: '+cd.length+' linhas');
+      cd.forEach(function(c){
+        var src=c.sessionsource||'';
+        var med=c.sessionmedium||'';
+        var camp=c.sessioncampaignname||'';
+        var cost=safeN(c.advertiseradcost||0);
+        var clicks=safeN(c.advertiseradclicks||0);
+        var impr=safeN(c.advertiseradimpressions||0);
+        if(cost>0||clicks>0){
+          G.raw.main.forEach(function(r){
+            var rs=r.sessionsource||'';
+            var rm=r.sessionmedium||'';
+            var rc=r.sessioncampaignname||'';
+            if(rs===src&&rm===med&&rc===camp){
+              r.advertiseradcost=(safeN(r.advertiseradcost||0)+cost);
+              r.advertiseradclicks=(safeN(r.advertiseradclicks||0)+clicks);
+              r.advertiseradimpressions=(safeN(r.advertiseradimpressions||0)+impr);
+            }
+          });
+        }
+      });
+    }catch(ce){
+      console.warn('⚠️ Custo indisponível:',ce.message);
+    }
+
+    populateFilters();
+    applyFilters();
+    $('lastUpd').textContent='⏱ '+new Date().toLocaleString('pt-BR');
+    setSt('gSt','o','✅ '+G.raw.main.length+' registros · '+dias+' dias carregados.');
+    setTimeout(function(){hideSt('gSt');},6000);
+
+  }catch(err){
+    console.error(err);
+    setSt('gSt','e','❌ '+err.message);
+    if(err.message.indexOf('expirado')>=0){
+      G.token=null;
+      $('authCard').style.display='';
+      setSt('authSt','e','❌ Token expirado. Reconecte.');
+    }
+  }finally{
+    setLoad(false);
+    $('btnRef').disabled=false;
+  }
 }
 function getDR(){var p=$('fPer').value;if(p==='custom')return{startDate:$('fDS').value||'30daysAgo',endDate:$('fDE').value||'today'};return{startDate:p+'daysAgo',endDate:'today'};}
-function onPeriodChange(){var p=$('fPer').value;$('fCusW').style.display=p==='custom'?'':'none';if(p!=='custom'&&G.token)fetchAll();}
+function getDias(){
+  var p=$('fPer').value;
+  if(p==='custom'){
+    var ds=$('fDS').value,de=$('fDE').value;
+    if(ds&&de){
+      var diff=(new Date(de)-new Date(ds))/(1000*60*60*24);
+      return Math.max(1,Math.round(diff));
+    }
+    return 30;
+  }
+  return parseInt(p)||30;
+}  
+  function onPeriodChange(){var p=$('fPer').value;$('fCusW').style.display=p==='custom'?'':'none';if(p!=='custom'&&G.token)fetchAll();}
 
 function getF(r,keys){for(var i=0;i<keys.length;i++){if(r[keys[i]]!==undefined)return r[keys[i]];}return'';}
 
