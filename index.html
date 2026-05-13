@@ -162,7 +162,13 @@ tbody td:first-child{color:var(--text);font-weight:500}
   .funnel-num{min-width:48px;font-size:.7rem}
   .farrow-line span:first-child{display:none}
 }
-/* ROAS Cards */
+<!-- SESSÕES POR CAMPANHA -->
+<div class="cgrid" id="sessGrid">
+  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — First Click</div><div class="csub">Campanhas que trouxeram mais sessões</div></div></div><canvas id="cSessFirst" height="250"></canvas><div class="empty" id="eSessFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — Last Click</div><div class="csub">Campanhas no último toque</div></div></div><canvas id="cSessLast" height="250"></canvas><div class="empty" id="eSessLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
+</div>
+
+  /* ROAS Cards */
 .roas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;padding:4px 0}
 .roas-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;transition:all .2s}
 .roas-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
@@ -170,7 +176,10 @@ tbody td:first-child{color:var(--text);font-weight:500}
 .roas-camp{font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:8px;line-height:1.3;word-break:break-word}
 .roas-val{font-size:1.4rem;font-weight:800;color:var(--rc,#4f46e5);letter-spacing:-.5px;line-height:1}
 .roas-sub{font-size:.68rem;color:var(--text3);margin-top:5px} 
-  
+/* grid de sessões por campanha — mesmo comportamento do cgrid principal */
+#sessGrid{margin-bottom:22px}
+@media(max-width:600px){#sessGrid .c6{grid-column:span 12}} 
+ 
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 </style>
@@ -636,6 +645,8 @@ function renderAll(d){
   renderTable(d.main);
   renderSessions(d.sessData);
   renderFunnel(d.funnel);
+  renderSessFirst(d.first);
+  renderSessLast(d.last);
   renderInsights(d);
 }
 function renderKPIs(data){
@@ -1244,6 +1255,55 @@ function renderFunnel(data){
     }
   });
   wrap.innerHTML=html;
+}
+function renderSessFirst(data){
+  /* mapa de cor compartilhado com o First de receita */
+  G.sessFirstColorMap={};
+  var entries=aggBy(data,
+    function(r){return r.firstusercampaignname||'(sem campanha)';},
+    function(r){return safeN(r.sessions||0);}
+  );
+  /* tenta reaproveitar cor do firstColorMap de receita para mesma campanha */
+  var colorIdx=Object.keys(G.firstColorMap||{}).length;
+  entries.forEach(function(e){
+    var camp=e[0];
+    if(G.firstColorMap&&G.firstColorMap[camp]){
+      G.sessFirstColorMap[camp]=G.firstColorMap[camp];
+    }else{
+      G.sessFirstColorMap[camp]=getC(colorIdx++);
+    }
+  });
+  buildBarChart(
+    'sessFirst','cSessFirst','eSessFirst',
+    entries.map(function(e){return e[0];}),
+    entries.map(function(e){return e[1];}),
+    entries.map(function(e){return G.sessFirstColorMap[e[0]];}),
+    num,true,true
+  );
+}
+
+function renderSessLast(data){
+  /* compartilha cores com sessFirst — mesma campanha = mesma cor */
+  var colorMap=G.sessFirstColorMap||{};
+  var colorIdx=Object.keys(colorMap).length;
+  var entries=aggBy(data,
+    function(r){return r.sessioncampaignname||'(sem campanha)';},
+    function(r){return safeN(r.sessions||0);}
+  );
+  var colors=entries.map(function(e){
+    var camp=e[0];
+    if(!colorMap[camp]){
+      colorMap[camp]=getC(colorIdx++);
+    }
+    return colorMap[camp];
+  });
+  buildBarChart(
+    'sessLast','cSessLast','eSessLast',
+    entries.map(function(e){return e[0];}),
+    entries.map(function(e){return e[1];}),
+    colors,
+    num,true,true
+  );
 }
   function renderInsights(d){
   var data=d.main;
