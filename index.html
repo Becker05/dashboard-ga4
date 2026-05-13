@@ -771,16 +771,16 @@ function renderLine(data){
     }
   });
 }
-function buildBarChart(key,canvasId,emptyId,labels,vals,colors,fmt,horizontal){
+function buildBarChart(key,canvasId,emptyId,labels,vals,colors,fmt,horizontal,inlineLabels){
   destroyChart(key);
   if(!labels.length){showEmp(canvasId,emptyId,true);return;}
   showEmp(canvasId,emptyId,false);
   var isDark=getDark();
   var opts={
     responsive:true,
+    maintainAspectRatio:true,
     plugins:{
       legend:{display:false},
-      datalabels:{display:false},
       tooltip:{
         backgroundColor:isDark?'#1e2130':'#fff',
         titleColor:isDark?'#f1f5f9':'#1a202c',
@@ -789,27 +789,84 @@ function buildBarChart(key,canvasId,emptyId,labels,vals,colors,fmt,horizontal){
         borderWidth:1,
         padding:10,
         callbacks:{label:function(c){return ' '+fmt(c.raw);}}
-      }
+      },
+      datalabels:inlineLabels?{
+        display:true,
+        anchor:'start',
+        align:'end',
+        clip:true,
+        formatter:function(val,ctx){
+          var lbl=labels[ctx.dataIndex];
+          var fmtVal=fmt(val);
+          /* no mobile encurta o nome */
+          var maxLen=window.innerWidth<600?12:20;
+          var name=lbl.length>maxLen?lbl.slice(0,maxLen-1)+'…':lbl;
+          return name+'  '+fmtVal;
+        },
+        color:function(ctx){
+          /* cor do texto: branco se barra larga, escuro se curta */
+          var meta=ctx.chart.getDatasetMeta(0);
+          var bar=meta.data[ctx.dataIndex];
+          if(!bar)return'#fff';
+          var barSize=horizontal?bar.width:bar.height;
+          return barSize>90?'#fff':'#fff';
+        },
+        font:function(){
+          return{
+            weight:'700',
+            size:window.innerWidth<600?10:11
+          };
+        },
+        textShadowBlur:4,
+        textShadowColor:'rgba(0,0,0,0.55)',
+        padding:{left:8,right:8}
+      }:{display:false}
     },
     scales:{
       x:{
         grid:{color:horizontal?gridColor():'rgba(0,0,0,0)'},
-        ticks:{color:tickColor(),callback:horizontal?function(v){return fmt(v);}:undefined}
+        ticks:{
+          color:tickColor(),
+          callback:horizontal?function(v){return fmt(v);}:undefined,
+          display:!inlineLabels||!horizontal,
+          maxRotation:0
+        }
       },
       y:{
         grid:{color:horizontal?'rgba(0,0,0,0)':gridColor()},
-        ticks:{color:tickColor(),callback:horizontal?undefined:function(v){return fmt(v);}}
+        ticks:{
+          color:tickColor(),
+          callback:horizontal?undefined:function(v){return fmt(v);},
+          display:!inlineLabels||horizontal?false:true
+        }
       }
     }
   };
   if(horizontal)opts.indexAxis='y';
+  /* quando inline: esconde eixo Y pois nome já está na barra */
+  if(inlineLabels&&horizontal){
+    opts.scales.y.ticks.display=false;
+    opts.scales.y.grid.display=false;
+    opts.scales.x.ticks.display=true;
+    /* aumenta altura mínima por item para caber o texto */
+    var minH=Math.max(labels.length*38,180);
+    $(canvasId).style.minHeight=minH+'px';
+    $(canvasId).style.height=minH+'px';
+  }
   G.charts[key]=new Chart($(canvasId).getContext('2d'),{
     type:'bar',
-    data:{labels:labels,datasets:[{data:vals,backgroundColor:colors,borderRadius:6,borderSkipped:false}]},
+    data:{
+      labels:labels,
+      datasets:[{
+        data:vals,
+        backgroundColor:colors,
+        borderRadius:6,
+        borderSkipped:false
+      }]
+    },
     options:opts
   });
 }
-
 function renderDonut(data){
   destroyChart('donut');
   var map={};
@@ -1016,12 +1073,12 @@ function renderFirst(data){
   entries.forEach(function(e,i){
     G.firstColorMap[e[0]]=getC(i);
   });
-  buildBarChart(
+   buildBarChart(
     'first','cFirst','eFirst',
-    entries.map(function(e){return short(e[0]);}),
+    entries.map(function(e){return e[0];}),
     entries.map(function(e){return e[1];}),
     entries.map(function(e){return G.firstColorMap[e[0]];}),
-    brl,true
+    brl,true,true
   );
 }
 
@@ -1042,10 +1099,10 @@ function renderLast(data){
   });
   buildBarChart(
     'last','cLast','eLast',
-    entries.map(function(e){return short(e[0]);}),
+    entries.map(function(e){return e[0];}),
     entries.map(function(e){return e[1];}),
     colors,
-    brl,true
+    brl,true,true
   );
 }
   function renderTable(data){
