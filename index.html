@@ -285,13 +285,13 @@ async function fetchAll(){
   $('btnRef').disabled=true;
   try{
     var dr=getDR();
-    setLoad(true,'Buscando dados...');
+    setLoad(true,'Buscando dados principais...');
     var results=await Promise.allSettled([
-      ga4Req({dateRanges:[dr],dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'sessionCampaignName'},{name:'firstUserSource'},{name:'firstUserMedium'},{name:'firstUserCampaignName'},{name:'sessionDefaultChannelGrouping'},{name:'region'}],metrics:[{name:'sessions'},{name:'activeUsers'},{name:'newUsers'},{name:'ecommercePurchases'},{name:'purchaseRevenue'},{name:'addToCarts'},{name:'checkouts'},{name:'advertiserAdCost'}],limit:5000}),
+      ga4Req({dateRanges:[dr],dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'sessionCampaignName'},{name:'sessionDefaultChannelGrouping'},{name:'region'}],metrics:[{name:'sessions'},{name:'activeUsers'},{name:'newUsers'},{name:'ecommercePurchases'},{name:'purchaseRevenue'}],limit:5000}),
       ga4Req({dateRanges:[dr],dimensions:[{name:'yearMonth'},{name:'sessionSource'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'},{name:'sessions'}],orderBys:[{dimension:{dimensionName:'yearMonth'}}],limit:5000}),
-      ga4Req({dateRanges:[dr],dimensions:[{name:'itemCategory'},{name:'itemName'},{name:'itemId'}],metrics:[{name:'itemsViewed'},{name:'itemsPurchased'},{name:'itemRevenue'},{name:'addToCarts'}],limit:1000}),
-      ga4Req({dateRanges:[dr],dimensions:[{name:'firstUserCampaignName'},{name:'firstUserSource'},{name:'firstUserMedium'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'},{name:'sessions'},{name:'newUsers'}],limit:500}),
-      ga4Req({dateRanges:[dr],dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'},{name:'sessionMedium'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'},{name:'sessions'},{name:'advertiserAdCost'}],limit:500}),
+      ga4Req({dateRanges:[dr],dimensions:[{name:'itemCategory'},{name:'itemName'}],metrics:[{name:'itemsPurchased'},{name:'itemRevenue'}],limit:1000}),
+      ga4Req({dateRanges:[dr],dimensions:[{name:'firstUserCampaignName'},{name:'firstUserSource'},{name:'firstUserMedium'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'},{name:'sessions'}],limit:500}),
+      ga4Req({dateRanges:[dr],dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'},{name:'sessionMedium'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'},{name:'sessions'}],limit:500}),
       ga4Req({dateRanges:[dr],dimensions:[{name:'region'},{name:'city'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'},{name:'sessions'}],limit:500})
     ]);
     G.raw.main  =results[0].status==='fulfilled'?parseRep(results[0].value):[];
@@ -300,10 +300,46 @@ async function fetchAll(){
     G.raw.first =results[3].status==='fulfilled'?parseRep(results[3].value):[];
     G.raw.last  =results[4].status==='fulfilled'?parseRep(results[4].value):[];
     G.raw.states=results[5].status==='fulfilled'?parseRep(results[5].value):[];
+
+    /* tenta buscar custo separadamente — só funciona se tiver Google Ads vinculado */
+    try{
+      var costR=await ga4Req({dateRanges:[dr],dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'sessionCampaignName'}],metrics:[{name:'advertiserAdCost'}],limit:5000});
+      var costData=parseRep(costR);
+      /* merge custo nos dados principais */
+      costData.forEach(function(cr){
+        var src=cr.sessionsource||cr.session_source||'';
+        var med=cr.sessionmedium||cr.session_medium||'';
+        var camp=cr.sessioncampaignname||cr.session_campaign_name||'';
+        var cost=safeN(cr.advertiseradcost||cr.advertiser_ad_cost||0);
+        if(cost>0){
+          G.raw.main.forEach(function(r){
+            var rs=r.sessionsource||r.session_source||'';
+            var rm=r.sessionmedium||r.session_medium||'';
+            var rc=r.sessioncampaignname||r.session_campaign_name||'';
+            if(rs===src&&rm===med&&rc===camp){
+              r.advertiseradcost=(safeN(r.advertiseradcost||0)+cost);
+            }
+          });
+          G.raw.last.forEach(function(r){
+            var rs=r.sessionsource||r.session_source||'';
+            var rm=r.sessionmedium||r.session_medium||'';
+            var rc=r.sessioncampaignname||r.session_campaign_name||'';
+            if(rs===src&&rm===med&&rc===camp){
+              r.advertiseradcost=(safeN(r.advertiseradcost||0)+cost);
+            }
+          });
+        }
+      });
+      console.log('Custo carregado: '+costData.length+' linhas');
+    }catch(ce){
+      console.warn('Custo indisponível (sem Google Ads vinculado):',ce.message);
+    }
+
     populateFilters();
     applyFilters();
     $('lastUpd').textContent='⏱ '+new Date().toLocaleString('pt-BR');
-    setSt('gSt','o','✅ '+G.raw.main.length+' registros carregados.');
+    var total=G.raw.main.length;
+    setSt('gSt','o','✅ '+total+' registros carregados.');
     setTimeout(function(){hideSt('gSt');},6000);
   }catch(err){
     console.error(err);
@@ -314,7 +350,6 @@ async function fetchAll(){
     $('btnRef').disabled=false;
   }
 }
-
 function getDR(){var p=$('fPer').value;if(p==='custom')return{startDate:$('fDS').value||'30daysAgo',endDate:$('fDE').value||'today'};return{startDate:p+'daysAgo',endDate:'today'};}
 function onPeriodChange(){var p=$('fPer').value;$('fCusW').style.display=p==='custom'?'':'none';if(p!=='custom'&&G.token)fetchAll();}
 
