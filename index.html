@@ -128,6 +128,41 @@ tbody td:first-child{color:var(--text);font-weight:500}
 .drag-handle{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;background:rgba(0,0,0,.05);color:var(--text3);font-size:13px;cursor:grab;margin-left:auto;flex-shrink:0;}
 [data-theme=dark] .drag-handle{background:rgba(255,255,255,.08);}
 .drag-handle:hover{background:rgba(79,70,229,.15);color:var(--accent);}
+/* Sessões */
+.scard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);margin-bottom:22px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:14px}
+.sitem{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;transition:all .2s}
+.sitem:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.slbl{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:6px}
+.sval{font-size:1.3rem;font-weight:800;color:var(--text);letter-spacing:-.3px}
+
+/* Funil */
+.funnelcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);margin-bottom:22px}
+.funnel-wrap{margin-top:8px;overflow-x:auto}
+.funnel-table{width:100%;border-collapse:collapse}
+.funnel-table th{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:8px 12px;text-align:left;border-bottom:2px solid var(--border)}
+.funnel-table td{padding:0}
+.funnel-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.funnel-row:last-child{border-bottom:none}
+.funnel-step{font-size:.78rem;font-weight:600;color:var(--text);min-width:160px}
+.funnel-bar-wrap{flex:1;background:var(--bg);border-radius:6px;height:28px;overflow:hidden;min-width:80px}
+.funnel-bar{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:10px;font-size:.72rem;font-weight:700;color:#fff;transition:width .6s ease;white-space:nowrap}
+.funnel-num{font-size:.85rem;font-weight:700;color:var(--text);min-width:90px;text-align:right}
+.funnel-pct-prev{font-size:.75rem;color:var(--text3);min-width:80px;text-align:right}
+.funnel-pct-top{font-size:.75rem;color:var(--text3);min-width:80px;text-align:right}
+.funnel-arrow{font-size:.72rem;color:var(--text3);min-width:100px;text-align:center;padding:4px 0}
+.farrow-row{display:flex;align-items:center;gap:12px;padding:2px 12px}
+.farrow-line{flex:1;display:flex;align-items:center;gap:6px;color:var(--text3);font-size:.72rem}
+.farrow-badge{background:rgba(79,70,229,.1);color:#4f46e5;border-radius:12px;padding:2px 8px;font-weight:700;font-size:.71rem}
+.farrow-badge.red{background:rgba(239,68,68,.1);color:#ef4444}
+.farrow-badge.yellow{background:rgba(245,158,11,.1);color:#f59e0b}
+.farrow-badge.green{background:rgba(16,185,129,.1);color:#10b981}
+@media(max-width:768px){
+  .sgrid{grid-template-columns:repeat(2,1fr);}
+  .funnel-step{min-width:110px;font-size:.72rem}
+  .funnel-pct-prev,.funnel-pct-top{display:none}
+}
+  
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 </style>
@@ -198,7 +233,28 @@ tbody td:first-child{color:var(--text);font-weight:500}
   <div class="ccard c6"><div class="chead"><div><div class="ctitle">First Click</div><div class="csub">Primeiro toque do usuário</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cFirst" height="250"></canvas><div class="empty" id="eFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
   <div class="ccard c12"><div class="chead"><div><div class="ctitle">Last Click — Campanhas</div><div class="csub">Último toque antes da compra</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cLast" height="220"></canvas><div class="empty" id="eLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
 </div>
+<!-- SESSÕES -->
+<div class="scard" id="sessCard">
+  <div class="chead"><div><div class="ctitle">📊 Visão de Sessões</div><div class="csub">Comportamento do usuário no período</div></div></div>
+  <div class="sgrid">
+    <div class="sitem"><div class="slbl">Total de Sessões</div><div class="sval" id="sSess">—</div></div>
+    <div class="sitem"><div class="slbl">Sessões Engajadas</div><div class="sval" id="sEng">—</div></div>
+    <div class="sitem"><div class="slbl">Taxa de Engajamento</div><div class="sval" id="sEngR">—</div></div>
+    <div class="sitem"><div class="slbl">Duração Média</div><div class="sval" id="sDur">—</div></div>
+    <div class="sitem"><div class="slbl">Páginas / Sessão</div><div class="sval" id="sPpS">—</div></div>
+    <div class="sitem"><div class="slbl">Bounce Rate</div><div class="sval" id="sBnc">—</div></div>
+    <div class="sitem"><div class="slbl">Novos Usuários</div><div class="sval" id="sNew">—</div></div>
+    <div class="sitem"><div class="slbl">Usuários Recorrentes</div><div class="sval" id="sRet">—</div></div>
+  </div>
+</div>
 
+<!-- FUNIL -->
+<div class="funnelcard" id="funnelCard">
+  <div class="chead"><div><div class="ctitle">🔻 Funil de Conversão</div><div class="csub">Jornada do usuário até a compra</div></div></div>
+  <div class="funnel-wrap" id="funnelWrap">
+    <div style="text-align:center;padding:40px;color:var(--text3)">Aguardando dados...</div>
+  </div>
+</div>
 <div class="tcard">
   <div class="chead"><div><div class="ctitle">Tabela Executiva</div><div class="csub">Origem × Campanha</div></div><span id="tCount" style="font-size:.72rem;background:rgba(0,0,0,.05);padding:3px 10px;border-radius:12px;color:var(--text3)">0 linhas</span></div>
   <div class="twrap"><table><thead><tr><th onclick="sortBy(0)">Origem ↕</th><th onclick="sortBy(1)">Campanha ↕</th><th onclick="sortBy(2)">Vendas R$ ↕</th><th onclick="sortBy(3)">Custo R$ ↕</th><th onclick="sortBy(4)">ROAS ↕</th><th onclick="sortBy(5)">Compras ↕</th><th onclick="sortBy(6)">Ticket ↕</th><th onclick="sortBy(7)">Sessões ↕</th></tr></thead><tbody id="tBody"><tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">Autentique para visualizar os dados</td></tr></tbody></table></div>
@@ -370,17 +426,21 @@ G.raw.useDia=useDia;
 console.log('✅ histórico: '+G.raw.months.length+' linhas · modo:'+(useDia?'dia':'mês'));
 
     setLoad(true,'Buscando produtos, campanhas e estados...');
-    var res=await Promise.all([
-      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'itemCategory'},{name:'itemName'}],metrics:[{name:'itemsPurchased'},{name:'itemRevenue'}],limit:500},tmo).catch(function(e){console.warn('items:',e.message);return null;}),
-      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'firstUserCampaignName'},{name:'firstUserSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],limit:500},tmo).catch(function(e){console.warn('first:',e.message);return null;}),
-      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],limit:500},tmo).catch(function(e){console.warn('last:',e.message);return null;}),
-      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'region'}],metrics:[{name:'purchaseRevenue'},{name:'sessions'},{name:'ecommercePurchases'}],limit:200},tmo).catch(function(e){console.warn('states:',e.message);return null;})
-    ]);
-    G.raw.items =res[0]?parseRep(res[0]):[];
-    G.raw.first =res[1]?parseRep(res[1]):[];
-    G.raw.last  =res[2]?parseRep(res[2]):[];
-    G.raw.states=res[3]?parseRep(res[3]):[];
-    console.log('✅ items:'+G.raw.items.length+' first:'+G.raw.first.length+' last:'+G.raw.last.length+' states:'+G.raw.states.length);
+   var res=await Promise.all([
+  ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'itemCategory'},{name:'itemName'}],metrics:[{name:'itemsPurchased'},{name:'itemRevenue'}],limit:500},tmo).catch(function(e){console.warn('items:',e.message);return null;}),
+  ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'firstUserCampaignName'},{name:'firstUserSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],limit:500},tmo).catch(function(e){console.warn('first:',e.message);return null;}),
+  ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],limit:500},tmo).catch(function(e){console.warn('last:',e.message);return null;}),
+  ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'region'}],metrics:[{name:'purchaseRevenue'},{name:'sessions'},{name:'ecommercePurchases'}],limit:200},tmo).catch(function(e){console.warn('states:',e.message);return null;}),
+  ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionDefaultChannelGrouping'}],metrics:[{name:'sessions'},{name:'engagedSessions'},{name:'averageSessionDuration'},{name:'screenPageViewsPerSession'},{name:'bounceRate'},{name:'newUsers'},{name:'activeUsers'}],limit:50},tmo).catch(function(e){console.warn('sess:',e.message);return null;}),
+  ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'eventName'}],metrics:[{name:'eventCount'}],dimensionFilter:{filter:{fieldName:'eventName',inListFilter:{values:['page_view','view_item','add_to_cart','begin_checkout','add_payment_info','purchase']}}},limit:20},tmo).catch(function(e){console.warn('funnel:',e.message);return null;})
+]);
+G.raw.items  =res[0]?parseRep(res[0]):[];
+G.raw.first  =res[1]?parseRep(res[1]):[];
+G.raw.last   =res[2]?parseRep(res[2]):[];
+G.raw.states =res[3]?parseRep(res[3]):[];
+G.raw.sessData=res[4]?parseRep(res[4]):[];
+G.raw.funnel =res[5]?parseRep(res[5]):[];
+console.log('✅ sessData:'+G.raw.sessData.length+' funnel:'+G.raw.funnel.length);
 
   setLoad(true,'Buscando custos de mídia...');
 try{
@@ -543,13 +603,15 @@ function onCustomDate(){
 function applyFilters(){
   if(!G.raw.main.length)return;
   G.filtered={
-    main:G.raw.main,
-    months:G.raw.months,
-    first:G.raw.first,
-    last:G.raw.last,
-    items:G.raw.items,
-    states:G.raw.states
-  };
+  main:G.raw.main,
+  months:G.raw.months,
+  first:G.raw.first,
+  last:G.raw.last,
+  items:G.raw.items,
+  states:G.raw.states,
+  sessData:G.raw.sessData||[],
+  funnel:G.raw.funnel||[]
+};
   renderAll(G.filtered);
 }
 
@@ -566,6 +628,8 @@ function renderAll(d){
   renderFirst(d.first);
   renderLast(d.last);
   renderTable(d.main);
+  renderSessions(d.sessData);
+  renderFunnel(d.funnel);
   renderInsights(d);
 }
 function renderKPIs(data){
@@ -980,7 +1044,107 @@ function sortBy(col){
   else{G.sortCol=col;G.sortAsc=false;}
   if(G.filtered)renderTable(G.filtered.main);
 }
+function renderSessions(data){
+  if(!data||!data.length){
+    $('sSess').textContent='—';
+    return;
+  }
+  var sess=0,eng=0,dur=0,ppv=0,bnc=0,nw=0,act=0,rows=0;
+  data.forEach(function(r){
+    var w=safeN(r.sessions||0);
+    sess+=w;
+    eng +=safeN(r.engagedsessions||0);
+    dur +=safeN(r.averagesessionduration||0)*w;
+    ppv +=safeN(r.screenpageviewspersession||0)*w;
+    bnc +=safeN(r.bouncerate||0)*w;
+    nw  +=safeN(r.newusers||0);
+    act +=safeN(r.activeusers||0);
+    rows++;
+  });
+  var avgDur=sess>0?dur/sess:0;
+  var avgPpv=sess>0?ppv/sess:0;
+  var avgBnc=sess>0?bnc/sess:0;
+  var engRate=sess>0?(eng/sess)*100:0;
+  var ret=Math.max(0,act-nw);
+  var fmt=function(s){
+    s=Math.round(s);
+    var m=Math.floor(s/60),sc=s%60;
+    return m+'m '+sc+'s';
+  };
+  $('sSess').textContent=num(sess);
+  $('sEng').textContent=num(eng);
+  $('sEngR').textContent=engRate.toFixed(1).replace('.',',')+' %';
+  $('sDur').textContent=fmt(avgDur);
+  $('sPpS').textContent=avgPpv.toFixed(1).replace('.',',');
+  $('sBnc').textContent=(avgBnc*100).toFixed(1).replace('.',',')+' %';
+  $('sNew').textContent=num(nw);
+  $('sRet').textContent=num(ret);
+}
 
+function renderFunnel(data){
+  var wrap=$('funnelWrap');
+  if(!data||!data.length){
+    wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">Dados de funil indisponíveis para este período.</div>';
+    return;
+  }
+  var STEPS=[
+    {key:'page_view',     label:'👁️ Page View',       color:'#4f46e5'},
+    {key:'view_item',     label:'🛍️ View Item',        color:'#7c3aed'},
+    {key:'add_to_cart',   label:'🛒 Add to Cart',      color:'#3b82f6'},
+    {key:'begin_checkout',label:'💳 Begin Checkout',   color:'#f59e0b'},
+    {key:'add_payment_info',label:'💰 Add Payment',    color:'#f97316'},
+    {key:'purchase',      label:'✅ Purchase',         color:'#10b981'}
+  ];
+  /* monta mapa de eventos */
+  var evMap={};
+  data.forEach(function(r){
+    var ev=r.eventname||r.event_name||'';
+    if(ev)evMap[ev]=safeN(r.eventcount||0);
+  });
+  /* preenche steps */
+  var steps=STEPS.map(function(s){
+    return{label:s.label,color:s.color,val:evMap[s.key]||0};
+  });
+  var maxVal=Math.max.apply(null,steps.map(function(s){return s.val;}))||1;
+  /* monta HTML */
+  var html='<div style="overflow-x:auto">';
+  /* cabeçalho */
+  html+='<div style="display:flex;gap:12px;padding:6px 12px;border-bottom:2px solid var(--border);margin-bottom:4px">'
+    +'<div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);min-width:160px">Etapa</div>'
+    +'<div style="flex:1;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Volume</div>'
+    +'<div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);min-width:90px;text-align:right">Eventos</div>'
+    +'<div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);min-width:90px;text-align:right">vs anterior</div>'
+    +'<div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);min-width:90px;text-align:right">vs topo</div>'
+    +'</div>';
+  steps.forEach(function(s,i){
+    var pctBar=maxVal>0?(s.val/maxVal)*100:0;
+    var pctPrev=i>0&&steps[i-1].val>0?(s.val/steps[i-1].val)*100:null;
+    var pctTop=steps[0].val>0?(s.val/steps[0].val)*100:null;
+    /* linha da etapa */
+    html+='<div class="funnel-row">'
+      +'<div class="funnel-step">'+s.label+'</div>'
+      +'<div class="funnel-bar-wrap"><div class="funnel-bar" style="width:'+pctBar.toFixed(1)+'%;background:'+s.color+'">'+( pctBar>15?num(s.val):'' )+'</div></div>'
+      +'<div class="funnel-num">'+num(s.val)+'</div>'
+      +'<div class="funnel-pct-prev">'+(pctPrev!==null?pctPrev.toFixed(1).replace('.',',')+'%':'—')+'</div>'
+      +'<div class="funnel-pct-top">'+(pctTop!==null?pctTop.toFixed(1).replace('.',',')+'%':'—')+'</div>'
+      +'</div>';
+    /* seta de conversão entre etapas */
+    if(i<steps.length-1){
+      var next=steps[i+1];
+      var conv=s.val>0?(next.val/s.val)*100:0;
+      var cls=conv>=50?'green':conv>=25?'yellow':'red';
+      html+='<div class="farrow-row">'
+        +'<div style="min-width:160px"></div>'
+        +'<div class="farrow-line">'
+        +'<span style="color:var(--text3);font-size:11px">↓ conversão para próxima etapa:</span>'
+        +'<span class="farrow-badge '+cls+'">'+conv.toFixed(1).replace('.',',')+'%</span>'
+        +'</div>'
+        +'</div>';
+    }
+  });
+  html+='</div>';
+  wrap.innerHTML=html;
+}
 function renderInsights(d){
   var data=d.main;
   if(!data.length){$('iGrid').innerHTML='<div class="iitem" style="--ic:#718096"><div class="ilbl">Aguardando</div><div class="itxt">Sem dados carregados.</div></div>';return;}
