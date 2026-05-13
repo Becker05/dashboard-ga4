@@ -256,7 +256,7 @@ function refreshData(){
 }
 
 async function ga4Req(body){
-  var url='https://analyticsdata.googleapis.com/v1beta/properties/'+G.propId+':runReport?_t='+Date.now();
+  var url='https://analyticsdata.googleapis.com/v1beta/properties/'+G.propId+':runReport';
   var r=await fetch(url,{method:'POST',headers:{'Authorization':'Bearer '+G.token,'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(!r.ok){
     var e=await r.json().catch(function(){return{};});
