@@ -646,45 +646,102 @@ function setLM(m){
 
 function renderLine(data){
   destroyChart('line');
-  if(!data.length){showEmp('cLine','eLine',true);return;}
+  if(!data||!data.length){showEmp('cLine','eLine',true);return;}
   showEmp('cLine','eLine',false);
-  var months={};
+  var useDia=G.raw.useDia;
+  var periods={};
   data.forEach(function(r){
-    var m=r.yearmonth||'';
-    if(!m)return;
-    if(!months[m])months[m]={rev:0,qty:0};
-    months[m].rev+=safeN(r.purchaserevenue||0);
-    months[m].qty+=safeN(r.ecommercepurchases||0);
+    var k=useDia?(r.date||''):(r.yearmonth||'');
+    if(!k)return;
+    if(!periods[k])periods[k]={rev:0,qty:0};
+    periods[k].rev+=safeN(r.purchaserevenue||0);
+    periods[k].qty+=safeN(r.ecommercepurchases||0);
   });
-  var keys=Object.keys(months).sort();
-  var labels=keys.map(function(k){var y=k.slice(0,4),mo=k.slice(4,6);return new Date(y,parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});});
-  var vals=keys.map(function(k){return G.lineMode==='value'?months[k].rev:months[k].qty;});
+  var keys=Object.keys(periods).sort();
+  var labels=keys.map(function(k){
+    if(useDia){
+      var y=k.slice(0,4),m=k.slice(4,6),d=k.slice(6,8);
+      return new Date(y,parseInt(m)-1,parseInt(d))
+        .toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+    }else{
+      var y=k.slice(0,4),mo=k.slice(4,6);
+      return new Date(y,parseInt(mo)-1,1)
+        .toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});
+    }
+  });
+  var vals=keys.map(function(k){
+    return G.lineMode==='value'?periods[k].rev:periods[k].qty;
+  });
+  var maxVal=Math.max.apply(null,vals)||1;
+  var isDark=getDark();
   G.charts.line=new Chart($('cLine').getContext('2d'),{
     type:'line',
-    data:{labels:labels,datasets:[{label:G.lineMode==='value'?'Receita R$':'Compras',data:vals,borderColor:'#4f46e5',backgroundColor:'rgba(79,70,229,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#4f46e5',pointRadius:4,pointHoverRadius:6,borderWidth:2.5}]},
-    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return G.lineMode==='value'?brl(c.raw):num(c.raw)+' compras';}}}},scales:{x:{grid:{color:gridColor()},ticks:{color:tickColor()}},y:{grid:{color:gridColor()},ticks:{color:tickColor(),callback:function(v){return G.lineMode==='value'?'R$ '+num(v):num(v);}}}}}
-  });
-}
-
-function buildBarChart(key,canvasId,emptyId,labels,vals,colors,fmt,horizontal){
-  destroyChart(key);
-  if(!labels.length){showEmp(canvasId,emptyId,true);return;}
-  showEmp(canvasId,emptyId,false);
-  var opts={
-    responsive:true,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return fmt(c.raw);}}}},
-    scales:{
-      x:{grid:{color:horizontal?gridColor():'rgba(0,0,0,0)'},ticks:{color:tickColor(),callback:horizontal?function(v){return fmt(v);}:undefined}},
-      y:{grid:{color:horizontal?'rgba(0,0,0,0)':gridColor()},ticks:{color:tickColor(),callback:horizontal?undefined:function(v){return fmt(v);}}}
+    data:{
+      labels:labels,
+      datasets:[{
+        label:G.lineMode==='value'?'Receita R$':'Compras',
+        data:vals,
+        borderColor:'#4f46e5',
+        backgroundColor:function(ctx){
+          var chart=ctx.chart;
+          var a=chart.chartArea;
+          if(!a)return'rgba(79,70,229,0.1)';
+          var g=chart.ctx.createLinearGradient(0,a.top,0,a.bottom);
+          g.addColorStop(0,'rgba(79,70,229,0.35)');
+          g.addColorStop(1,'rgba(79,70,229,0.01)');
+          return g;
+        },
+        fill:true,
+        tension:0.4,
+        pointBackgroundColor:'#fff',
+        pointBorderColor:'#4f46e5',
+        pointBorderWidth:2,
+        pointRadius:useDia&&keys.length>30?0:4,
+        pointHoverRadius:6,
+        borderWidth:2.5
+      }]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:false},
+        tooltip:{
+          backgroundColor:isDark?'#1e2130':'#fff',
+          titleColor:isDark?'#f1f5f9':'#1a202c',
+          bodyColor:isDark?'#94a3b8':'#4a5568',
+          borderColor:'rgba(79,70,229,0.3)',
+          borderWidth:1,
+          padding:10,
+          callbacks:{
+            label:function(c){
+              return G.lineMode==='value'
+                ?' '+brl(c.raw)
+                :' '+num(c.raw)+' compras';
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          grid:{color:gridColor()},
+          ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}
+        },
+        y:{
+          grid:{color:gridColor()},
+          ticks:{
+            color:tickColor(),
+            callback:function(v){
+              return G.lineMode==='value'?'R$ '+num(v):num(v);
+            }
+          },
+          suggestedMin:0,
+          suggestedMax:maxVal*1.15
+        }
+      }
     }
-  };
-  if(horizontal)opts.indexAxis='y';
-  G.charts[key]=new Chart($(canvasId).getContext('2d'),{
-    type:'bar',
-    data:{labels:labels,datasets:[{data:vals,backgroundColor:colors,borderRadius:6,borderSkipped:false}]},
-    options:opts
   });
-}
 
 function renderDonut(data){
   destroyChart('donut');
@@ -809,12 +866,15 @@ function renderLast(data){
   G.charts.last=new Chart($('cLast').getContext('2d'),{
     type:'bar',
     data:{labels:labels,datasets:[{data:vals,backgroundColor:labels.map(function(_,i){return getC(i);}),borderRadius:6,borderSkipped:false}]},
-    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return brl(c.raw);}}}},scales:{x:{grid:{color:gridColor()},ticks:{color:tickColor(),callback:function(v){return 'R$ '+num(v);}}},y:{grid:{display:false},ticks:{color:tickColor()}}}}
+    options:{responsive:true, plugins:{
+      legend:{display:false},
+      datalabels:{display:false},
+      tooltip:{callbacks:{label:function(c){return fmt(c.raw);}}}
+    },scales:{x:{grid:{color:gridColor()},ticks:{color:tickColor(),callback:function(v){return 'R$ '+num(v);}}},y:{grid:{display:false},ticks:{color:tickColor()}}}}
   });
 }
 
 function renderTable(data){
-  var map={};
   var map={};
   data.forEach(function(r){
     var src=r.sessionsource||'(direct)';
