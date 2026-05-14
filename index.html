@@ -522,7 +522,6 @@ async function fetchAll(){
   try{
     var dr=getDR();var dias=getDias();var tmo=dias<=30?12000:dias<=90?20000:30000;
     setLoad(true,'Buscando sessões e vendas...');
-    var q1=await ga4ReqSafe({
 var q1=await ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'sessionCampaignName'},{name:'sessionDefaultChannelGrouping'},{name:'region'}],metrics:[{name:'sessions'},{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'activeUsers'}],limit:5000},tmo);
     G.raw.main=parseRep(q1);
     setLoad(true,'Buscando histórico...');
