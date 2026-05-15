@@ -399,15 +399,7 @@ function buildPropSelector(properties){
     $('propSelectorCard').style.display='';
     $('propGrid').innerHTML=properties.map(function(p,i){
       return'<button class="prop-btn'+(i===0?' active':'')+'" onclick="selectProp(\''+p.id+'\',\''+p.nome+'\',this)">'
-        +'<span class="prop-btn-ico">
-<svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="2" y="7" width="20" height="15" rx="2" stroke="#4f46e5" stroke-width="1.5" fill="rgba(79,70,229,0.1)"/>
-  <path d="M2 10h20" stroke="#4f46e5" stroke-width="1.5"/>
-  <path d="M8 22V16h8v6" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M2 7L5 2h14l3 5" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="12" cy="13" r="1.5" fill="#4f46e5"/>
-</svg>
-</span>'
++'<span class="prop-btn-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="15" rx="2" stroke="#4f46e5" stroke-width="1.5" fill="rgba(79,70,229,0.1)"/><path d="M2 10h20" stroke="#4f46e5" stroke-width="1.5"/><path d="M8 22V16h8v6" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round"/><path d="M2 7L5 2h14l3 5" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="1.5" fill="#4f46e5"/></svg></span>'
         +'<span class="prop-btn-nome">'+p.nome+'</span>'
         +'<span class="prop-btn-id">ID: '+p.id+'</span>'
         +'</button>';
