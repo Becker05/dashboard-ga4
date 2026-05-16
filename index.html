@@ -704,11 +704,11 @@ function renderLine(data){
       pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5
     }]},
     options:{
-      responsive:true,interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:false},datalabels:{display:false},
-        tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(79,70,229,0.3)',borderWidth:1,padding:10,
-          callbacks:{label:function(c){return G.lineMode==='value'?' '+brl(c.raw):' '+num(c.raw)+' compras';}}}
+    responsive:true,maintainAspectRatio:window.innerWidth>600,aspectRatio:window.innerWidth>600?4:2,interaction:{mode:'index',intersect:false},      
+    plugins:{
+    legend:{display:false},datalabels:{display:false},
+    tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(79,70,229,0.3)',borderWidth:1,padding:10,
+    callbacks:{label:function(c){return G.lineMode==='value'?' '+brl(c.raw):' '+num(c.raw)+' compras';}}}
       },
       scales:{
         x:{grid:{color:gridColor()},ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}},
@@ -791,11 +791,11 @@ function renderRoasLine(data){
       spanGaps:true
     }]},
     options:{
-      responsive:true,interaction:{mode:'index',intersect:false},
+    responsive:true,maintainAspectRatio:window.innerWidth>600,aspectRatio:window.innerWidth>600?4:2,interaction:{mode:'index',intersect:false},      
       plugins:{
-        legend:{display:false},datalabels:{display:false},
-        tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(16,185,129,0.3)',borderWidth:1,padding:10,
-          callbacks:{label:function(c){return c.raw!==null?' ROAS: '+roasF(c.raw):'Sem custo';}}}
+      legend:{display:false},datalabels:{display:false},
+      tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(16,185,129,0.3)',borderWidth:1,padding:10,
+      callbacks:{label:function(c){return c.raw!==null?' ROAS: '+roasF(c.raw):'Sem custo';}}}
       },
       scales:{
         x:{grid:{color:gridColor()},ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}},
@@ -838,11 +838,11 @@ function renderCostLine(data){
       pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5
     }]},
     options:{
-      responsive:true,interaction:{mode:'index',intersect:false},
+    responsive:true,maintainAspectRatio:window.innerWidth>600,aspectRatio:window.innerWidth>600?4:2,interaction:{mode:'index',intersect:false},      
       plugins:{
-        legend:{display:false},datalabels:{display:false},
-        tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(239,68,68,0.3)',borderWidth:1,padding:10,
-          callbacks:{label:function(c){return' '+brl(c.raw);}}}
+      legend:{display:false},datalabels:{display:false},
+      tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(239,68,68,0.3)',borderWidth:1,padding:10,
+      callbacks:{label:function(c){return' '+brl(c.raw);}}}
       },
       scales:{
         x:{grid:{color:gridColor()},ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}},
