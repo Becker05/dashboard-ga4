@@ -709,7 +709,14 @@ function onCustomDate(){var ds=$('fDS').value,de=$('fDE').value;if(ds&&de){Objec
 function onCompChange(){
   var c=$('fComp').value;
   $('fCompCusW').style.display=c==='custom'?'':'none';
-  if(c!=='custom'&&G.filtered){renderLine(G.filtered.months);renderCostLine(G.filtered.months);renderRoasLine(G.filtered.months);}
+  if(c==='none'&&G.filtered){
+    renderLine(G.filtered.months,[]); 
+    renderCostLine(G.filtered.months,[]);
+    renderRoasLine(G.filtered.months,[]);
+  } else if(c==='auto'&&G.token){
+    Object.keys(CACHE).forEach(function(k){delete CACHE[k];});
+    fetchAll();
+  }
 }
 function onCompCustomDate(){
   var ds=$('fCDS').value,de=$('fCDE').value;
@@ -809,9 +816,10 @@ function renderLine(data,dataComp){
       periodsC[k].qty+=safeN(r.ecommercepurchases||0);
     });
     var keysC=Object.keys(periodsC).sort();
-    G._compKeysLine=keysC;
+    G._compKeysRoas=keysC;
     G._compKeysCost=keysC;
     G._compKeysLine=keysC;
+    G._compKeysRoas=keysC;
     var valsC=keysC.map(function(k){return G.lineMode==='value'?periodsC[k].rev:periodsC[k].qty;});
     // Alinha pelo índice (mesmo número de pontos)
     var labelsC=keysC.map(function(k){
@@ -934,7 +942,7 @@ function renderRoasLine(data,dataComp){
     var keysC=Object.keys(periodsC).sort();
     G._compKeysLine=keysC;
     G._compKeysCost=keysC;
-    G._compKeysLine=keysC;
+    G._compKeysRoas=keysC;
     var valsC=keysC.map(function(k){var r=periodsC[k];return r.cost>0?parseFloat((r.rev/r.cost).toFixed(2)):null;});
     var valsAligned=labels.map(function(_,i){return valsC[i]!==undefined?valsC[i]:null;});
     datasets.push({label:'ROAS anterior',data:valsAligned,borderColor:'#06b6d4',borderDash:[5,4],backgroundColor:'transparent',fill:false,tension:0.4,pointBackgroundColor:'#06b6d4',pointBorderColor:'#06b6d4',pointBorderWidth:2,pointRadius:useDia&&keys.length>30?0:3,pointHoverRadius:5,borderWidth:2,spanGaps:true});
@@ -948,7 +956,18 @@ function renderRoasLine(data,dataComp){
         legend:{display:hasComp,position:'top',labels:{color:tickColor(),font:{size:11},boxWidth:16,padding:12}},
         datalabels:{display:false},
         tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(16,185,129,0.3)',borderWidth:1,padding:10,
-          callbacks:{label:function(c){return c.raw!==null?' '+c.dataset.label+': '+roasF(c.raw):'Sem custo';}}}
+          callbacks:{
+  title:function(items){
+    var idx=items[0].dataIndex;var t=items[0].label;
+    if($('fComp').value!=='none'&&G._compKeysRoas&&G._compKeysRoas[idx]){
+      var ck=G._compKeysRoas[idx];var ud=G.raw.useDia;
+      var cl=ud?(function(){var y=ck.slice(0,4),m=ck.slice(4,6),d=ck.slice(6,8);return new Date(y,parseInt(m)-1,parseInt(d)).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});})():(function(){var y=ck.slice(0,4),mo=ck.slice(4,6);return new Date(y,parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});})();
+      return t+' vs '+cl;
+    }
+    return t;
+  },
+  label:function(c){return c.raw!==null?' '+c.dataset.label+': '+roasF(c.raw):'Sem custo';}
+}}
       },
       scales:{
         x:{grid:{color:gridColor()},ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}},
@@ -999,7 +1018,7 @@ function renderCostLine(data,dataComp){
     var keysC=Object.keys(periodsC).sort();
     G._compKeysLine=keysC;
     G._compKeysCost=keysC;
-    G._compKeysLine=keysC;
+    G._compKeysRoas=keysC;
     var valsC=keysC.map(function(k){return periodsC[k].cost;});
     var valsAligned=labels.map(function(_,i){return valsC[i]!==undefined?valsC[i]:null;});
     datasets.push({label:'Investimento anterior',data:valsAligned,borderColor:'#f97316',borderDash:[5,4],backgroundColor:'transparent',fill:false,tension:0.4,pointBackgroundColor:'#f97316',pointBorderColor:'#f97316',pointBorderWidth:2,pointRadius:useDia&&keys.length>30?0:3,pointHoverRadius:5,borderWidth:2,spanGaps:true});
