@@ -301,7 +301,9 @@ Selecione a Propriedade</div>
 
 <!-- Gráficos -->
 <div class="cgrid" id="chartsGrid" style="display:none">
-  <div class="ccard c12"><div class="chead"><div><div class="ctitle">Histórico de Vendas</div><div class="csub" id="lineSubtitle">Evolução temporal</div></div><div class="togrow"><button class="tog on" id="togV" onclick="setLM('value')">R$</button><button class="tog" id="togQ" onclick="setLM('qty')">Qtd</button></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cLine" height="220"></canvas><div class="empty" id="eLine" style="display:none"><div class="eico">📊</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c12"><div class="chead"><div><div class="ctitle">Histórico de Vendas</div><div class="csub" id="lineSubtitle">Evolução temporal</div></div><div class="togrow"><button class="tog on" id="togV" onclick="setLM('value')">R$</button><button class="tog" id="togQ" onclick="setLM('qty')">Qtd</button></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cLine" height="90"></canvas><div class="empty" id="eLine" style="display:none"><div class="eico">📊</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c12"><div class="chead"><div><div class="ctitle">ROAS Diário</div><div class="csub" id="roasLineSubtitle">Evolução temporal do ROAS</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cRoasLine" height="90"></canvas><div class="empty" id="eRoasLine" style="display:none"><div class="eico">📊</div><div class="ettl">Sem dados de custo para calcular ROAS</div></div></div>
+  <div class="ccard c12"><div class="chead"><div><div class="ctitle">Investimento Diário</div><div class="csub" id="costLineSubtitle">Evolução temporal do custo de mídia</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cCostLine" height="90"></canvas><div class="empty" id="eCostLine" style="display:none"><div class="eico">📊</div><div class="ettl">Sem dados de investimento no período</div></div></div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Canal</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutChan" height="180"></canvas><div class="empty" id="eDonutChan" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegChan" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Origem</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonut" height="180"></canvas><div class="empty" id="eDonut" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLeg" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Mídia</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutMed" height="180"></canvas><div class="empty" id="eDonutMed" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegMed" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
@@ -540,7 +542,7 @@ async function fetchAll(){
     var q2=await ga4ReqSafe({
       dateRanges:[dr],
       dimensions:[{name:useDia?'date':'yearMonth'},{name:'sessionSource'}],
-      metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],
+      metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'},{name:'advertiserAdCost'}],
       orderBys:[{dimension:{dimensionName:useDia?'date':'yearMonth'}}],
       limit:500
     },tmo);
@@ -624,6 +626,8 @@ function applyFilters(){
 function renderAll(d){
   renderKPIs(d.main);
   renderLine(d.months);
+  renderRoasLine(d.months);
+  renderCostLine(d.months);
   renderDonut(d.main);
   renderDonutByKey('chan','cDonutChan','eDonutChan','dLegChan',d.main,function(r){return r.sessiondefaultchannelgrouping||'(direct)';});
   renderDonutByKey('med','cDonutMed','eDonutMed','dLegMed',d.main,function(r){return r.sessionmedium||'(none)';});
@@ -693,7 +697,7 @@ function renderLine(data){
       pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5
     }]},
     options:{
-    responsive:true,aspectRatio:window.innerWidth>768?4:undefined,interaction:{mode:'index',intersect:false},
+      responsive:true,interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:false},datalabels:{display:false},
         tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(79,70,229,0.3)',borderWidth:1,padding:10,
@@ -743,7 +747,103 @@ function buildBarChart(key,canvasId,emptyId,labels,vals,colors,fmt,horizontal,in
     options:opts
   });
 }
+function renderRoasLine(data){
+  destroyChart('roasLine');
+  var useDia=G.raw.useDia;
+  var sub=$('roasLineSubtitle');
+  if(sub)sub.textContent=useDia?'Dia a dia':'Evolução mensal';
+  var periods={};
+  data.forEach(function(r){
+    var k=useDia?(r.date||''):(r.yearmonth||'');
+    if(!k)return;
+    if(!periods[k])periods[k]={rev:0,cost:0};
+    periods[k].rev+=safeN(r.purchaserevenue||0);
+    periods[k].cost+=safeN(r.advertiseradcost||0);
+  });
+  var keys=Object.keys(periods).sort();
+  var hasCost=keys.some(function(k){return periods[k].cost>0;});
+  if(!keys.length||!hasCost){showEmp('cRoasLine','eRoasLine',true);return;}
+  showEmp('cRoasLine','eRoasLine',false);
+  var labels=keys.map(function(k){
+    if(useDia){var y=k.slice(0,4),m=k.slice(4,6),d=k.slice(6,8);return new Date(y,parseInt(m)-1,parseInt(d)).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});}
+    else{var y=k.slice(0,4),mo=k.slice(4,6);return new Date(y,parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});}
+  });
+  var vals=keys.map(function(k){
+    var r=periods[k];
+    return r.cost>0?parseFloat((r.rev/r.cost).toFixed(2)):null;
+  });
+  var isDark=getDark();
+  G.charts.roasLine=new Chart($('cRoasLine').getContext('2d'),{
+    type:'line',
+    data:{labels:labels,datasets:[{
+      label:'ROAS',data:vals,
+      borderColor:'#10b981',
+      backgroundColor:function(ctx){var chart=ctx.chart;var a=chart.chartArea;if(!a)return'rgba(16,185,129,0.1)';var g=chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,'rgba(16,185,129,0.35)');g.addColorStop(1,'rgba(16,185,129,0.01)');return g;},
+      fill:true,tension:0.4,pointBackgroundColor:'#fff',pointBorderColor:'#10b981',pointBorderWidth:2,
+      pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5,
+      spanGaps:true
+    }]},
+    options:{
+    responsive:true,aspectRatio:window.innerWidth>768?4:undefined,interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},datalabels:{display:false},
+        tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(16,185,129,0.3)',borderWidth:1,padding:10,
+          callbacks:{label:function(c){return c.raw!==null?' ROAS: '+roasF(c.raw):'Sem custo';}}}
+      },
+      scales:{
+        x:{grid:{color:gridColor()},ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}},
+        y:{grid:{color:gridColor()},ticks:{color:tickColor(),callback:function(v){return roasF(v);}},suggestedMin:0}
+      }
+    }
+  });
+}
 
+function renderCostLine(data){
+  destroyChart('costLine');
+  var useDia=G.raw.useDia;
+  var sub=$('costLineSubtitle');
+  if(sub)sub.textContent=useDia?'Dia a dia':'Evolução mensal';
+  var periods={};
+  data.forEach(function(r){
+    var k=useDia?(r.date||''):(r.yearmonth||'');
+    if(!k)return;
+    if(!periods[k])periods[k]={cost:0};
+    periods[k].cost+=safeN(r.advertiseradcost||0);
+  });
+  var keys=Object.keys(periods).sort();
+  var hasCost=keys.some(function(k){return periods[k].cost>0;});
+  if(!keys.length||!hasCost){showEmp('cCostLine','eCostLine',true);return;}
+  showEmp('cCostLine','eCostLine',false);
+  var labels=keys.map(function(k){
+    if(useDia){var y=k.slice(0,4),m=k.slice(4,6),d=k.slice(6,8);return new Date(y,parseInt(m)-1,parseInt(d)).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});}
+    else{var y=k.slice(0,4),mo=k.slice(4,6);return new Date(y,parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});}
+  });
+  var vals=keys.map(function(k){return periods[k].cost;});
+  var maxVal=Math.max.apply(null,vals)||1;
+  var isDark=getDark();
+  G.charts.costLine=new Chart($('cCostLine').getContext('2d'),{
+    type:'line',
+    data:{labels:labels,datasets:[{
+      label:'Investimento',data:vals,
+      borderColor:'#ef4444',
+      backgroundColor:function(ctx){var chart=ctx.chart;var a=chart.chartArea;if(!a)return'rgba(239,68,68,0.1)';var g=chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,'rgba(239,68,68,0.35)');g.addColorStop(1,'rgba(239,68,68,0.01)');return g;},
+      fill:true,tension:0.4,pointBackgroundColor:'#fff',pointBorderColor:'#ef4444',pointBorderWidth:2,
+      pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5
+    }]},
+    options:{
+    responsive:true,aspectRatio:window.innerWidth>768?4:undefined,interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},datalabels:{display:false},
+        tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(239,68,68,0.3)',borderWidth:1,padding:10,
+          callbacks:{label:function(c){return' '+brl(c.raw);}}}
+      },
+      scales:{
+        x:{grid:{color:gridColor()},ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}},
+        y:{grid:{color:gridColor()},ticks:{color:tickColor(),callback:function(v){return'R$ '+num(v);}},suggestedMin:0,suggestedMax:maxVal*1.15}
+      }
+    }
+  });
+}
 function renderDonut(data){
   destroyChart('donut');
   var map={};
