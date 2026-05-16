@@ -205,10 +205,14 @@ tbody td:first-child{color:var(--text);font-weight:500}
   tbody td{padding:8px 6px}.sgrid{grid-template-columns:repeat(2,1fr)}
   .funnel-step{min-width:100px;font-size:.72rem}.funnel-num{min-width:55px;font-size:.75rem}
   .prop-grid{flex-direction:column;align-items:center}
-  .hdr-r{display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:100%}
-  .hdr-mob-l1{display:flex;align-items:center;gap:8px;width:100%}
+  .hdr-r{display:flex;flex-direction:column;align-items:stretch;gap:8px;width:100%}
   .hdr-mob-l2{display:flex;align-items:center;gap:8px;width:100%}
+  .hdr-mob-l2 .user-badge{flex:1;justify-content:center}
   .hdr-mob-l3{display:flex;align-items:center;gap:8px;width:100%}
+  .hdr-mob-l3 .btn{flex:1;justify-content:center}
+  .hdr-mob-l3 .bico{flex-shrink:0}
+  .hdr-mob-l4{display:flex;align-items:center;width:100%}
+  .hdr-mob-l4 .prop-select-wrap{flex:1;width:100%;border-radius:8px;padding:7px 10px}
   .lupd{display:none}
 }
 @media(max-width:600px){.c6,#sessGrid .c6{grid-column:span 12}}
@@ -230,10 +234,13 @@ tbody td:first-child{color:var(--text);font-weight:500}
     <div><div class="htitle" id="hTitle">DASHBOARD GA4</div></div>
   </div>
   <div class="hdr-r">
-    <!-- Linha 1 mobile: lupd (desktop) -->
     <span class="lupd" id="lastUpd">⏱ Sem dados</span>
-    <!-- Linha 2 mobile: seletor de conta + email -->
+    <!-- Linha 2 mobile: email -->
     <div class="hdr-mob-l2">
+      <span class="user-badge" id="userBadge" style="display:none">👤 <span id="userEmail"></span></span>
+    </div>
+    <!-- Linha 3 mobile: seletor de conta -->
+    <div class="hdr-mob-l4">
       <div class="prop-select-wrap" id="propSelectWrap" style="display:none">
         <span class="prop-select-lbl">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -245,9 +252,8 @@ tbody td:first-child{color:var(--text);font-weight:500}
         </span>
         <select class="prop-select" id="propSelect" onchange="onPropChange()"></select>
       </div>
-      <span class="user-badge" id="userBadge" style="display:none">👤 <span id="userEmail"></span></span>
     </div>
-    <!-- Linha 3 mobile: botões ação -->
+    <!-- Linha 4 mobile: botões -->
     <div class="hdr-mob-l3">
       <button class="btn bp" id="btnRef" onclick="refreshData()" style="display:none">↻ Atualizar</button>
       <button class="btn bg" id="btnLogout" onclick="doLogout()" style="display:none">Sair</button>
