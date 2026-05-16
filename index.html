@@ -915,7 +915,7 @@ function renderRoasLine(data,dataComp){
   G.charts.roasLine=new Chart($('cRoasLine').getContext('2d'),{
     type:'line',data:{labels:labels,datasets:datasets},
     options:{
-      responsive:true,aspectRatio:window.innerWidth>768?4:2.5,
+      responsive:true,aspectRatio:window.innerWidth>768?4:1.5,
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:hasComp,position:'top',labels:{color:tickColor(),font:{size:11},boxWidth:16,padding:12}},
