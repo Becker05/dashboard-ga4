@@ -710,7 +710,7 @@ function onCompChange(){
   var c=$('fComp').value;
   $('fCompCusW').style.display=c==='custom'?'':'none';
   if(c==='none'&&G.filtered){
-    renderLine(G.filtered.months,[]); 
+    renderLine(G.filtered.months,[]);
     renderCostLine(G.filtered.months,[]);
     renderRoasLine(G.filtered.months,[]);
   } else if(c==='auto'&&G.token){
@@ -817,9 +817,8 @@ function renderLine(data,dataComp){
     });
     var keysC=Object.keys(periodsC).sort();
     G._compKeysRoas=keysC;
-    G._compKeysCost=keysC;
     G._compKeysLine=keysC;
-    G._compKeysRoas=keysC;
+    G._compKeysCost=keysC;
     var valsC=keysC.map(function(k){return G.lineMode==='value'?periodsC[k].rev:periodsC[k].qty;});
     // Alinha pelo índice (mesmo número de pontos)
     var labelsC=keysC.map(function(k){
@@ -919,7 +918,6 @@ function renderRoasLine(data,dataComp){
   G._compKeysLine=[];
   G._compKeysRoas=[];
   G._compKeysCost=[];
-  G._compKeysLine=[];
   var hasCost=keys.some(function(k){return periods[k].cost>0;});
   if(!keys.length||!hasCost){showEmp('cRoasLine','eRoasLine',true);return;}
   showEmp('cRoasLine','eRoasLine',false);
@@ -940,9 +938,9 @@ function renderRoasLine(data,dataComp){
     var periodsC={};
     dataComp.forEach(function(r){var k=useDia?(r.date||''):(r.yearmonth||'');if(!k)return;if(!periodsC[k])periodsC[k]={rev:0,cost:0};periodsC[k].rev+=safeN(r.purchaserevenue||0);periodsC[k].cost+=safeN(r.advertiseradcost||0);});
     var keysC=Object.keys(periodsC).sort();
+    G._compKeysRoas=keysC;
     G._compKeysLine=keysC;
     G._compKeysCost=keysC;
-    G._compKeysRoas=keysC;
     var valsC=keysC.map(function(k){var r=periodsC[k];return r.cost>0?parseFloat((r.rev/r.cost).toFixed(2)):null;});
     var valsAligned=labels.map(function(_,i){return valsC[i]!==undefined?valsC[i]:null;});
     datasets.push({label:'ROAS anterior',data:valsAligned,borderColor:'#06b6d4',borderDash:[5,4],backgroundColor:'transparent',fill:false,tension:0.4,pointBackgroundColor:'#06b6d4',pointBorderColor:'#06b6d4',pointBorderWidth:2,pointRadius:useDia&&keys.length>30?0:3,pointHoverRadius:5,borderWidth:2,spanGaps:true});
@@ -993,7 +991,6 @@ function renderCostLine(data,dataComp){
   G._compKeysLine=[];
   G._compKeysRoas=[];
   G._compKeysCost=[];
-  G._compKeysLine=[];
   var hasCost=keys.some(function(k){return periods[k].cost>0;});
   if(!keys.length||!hasCost){showEmp('cCostLine','eCostLine',true);return;}
   showEmp('cCostLine','eCostLine',false);
@@ -1016,9 +1013,9 @@ function renderCostLine(data,dataComp){
     var periodsC={};
     dataComp.forEach(function(r){var k=useDia?(r.date||''):(r.yearmonth||'');if(!k)return;if(!periodsC[k])periodsC[k]={cost:0};periodsC[k].cost+=safeN(r.advertiseradcost||0);});
     var keysC=Object.keys(periodsC).sort();
+    G._compKeysRoas=keysC;
     G._compKeysLine=keysC;
     G._compKeysCost=keysC;
-    G._compKeysRoas=keysC;
     var valsC=keysC.map(function(k){return periodsC[k].cost;});
     var valsAligned=labels.map(function(_,i){return valsC[i]!==undefined?valsC[i]:null;});
     datasets.push({label:'Investimento anterior',data:valsAligned,borderColor:'#f97316',borderDash:[5,4],backgroundColor:'transparent',fill:false,tension:0.4,pointBackgroundColor:'#f97316',pointBorderColor:'#f97316',pointBorderWidth:2,pointRadius:useDia&&keys.length>30?0:3,pointHoverRadius:5,borderWidth:2,spanGaps:true});
