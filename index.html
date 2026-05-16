@@ -767,7 +767,7 @@ function setLM(m){
   G.lineMode=m;
   $('togV').className='tog'+(m==='value'?' on':'');
   $('togQ').className='tog'+(m==='qty'?' on':'');
-  if(G.filtered)renderLine(G.filtered.months);
+if(G.filtered)renderLine(G.filtered.months,G.filtered.monthsComp||[]);
 }
 
 function renderLine(data,dataComp){
