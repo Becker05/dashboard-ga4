@@ -211,9 +211,6 @@ tbody td:first-child{color:var(--text);font-weight:500}
   .funnel-step{min-width:80px;font-size:.68rem}.funnel-num{min-width:48px;font-size:.7rem}
   .farrow-line span:first-child{display:none}
 }
-  @media(max-width:768px){
-  #cLine, #cRoasLine, #cCostLine { min-height: 220px !important; }
-}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 </style>
@@ -700,7 +697,8 @@ function renderLine(data){
       pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5
     }]},
     options:{
-  responsive:true,aspectRatio:window.innerWidth>768?4:undefined,interaction:{mode:'index',intersect:false},
+  responsive:true,aspectRatio:window.innerWidth>768?4:2.5,
+      interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:false},datalabels:{display:false},
         tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(79,70,229,0.3)',borderWidth:1,padding:10,
@@ -787,7 +785,8 @@ function renderRoasLine(data){
       spanGaps:true
     }]},
     options:{
-    responsive:true,aspectRatio:window.innerWidth>768?4:undefined,interaction:{mode:'index',intersect:false},
+  responsive:true,aspectRatio:window.innerWidth>768?4:2.5,
+      interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:false},datalabels:{display:false},
         tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(16,185,129,0.3)',borderWidth:1,padding:10,
@@ -834,7 +833,8 @@ function renderCostLine(data){
       pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5
     }]},
     options:{
-    responsive:true,aspectRatio:window.innerWidth>768?4:undefined,interaction:{mode:'index',intersect:false},
+    responsive:true,aspectRatio:window.innerWidth>768?4:2.5,
+      interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:false},datalabels:{display:false},
         tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(239,68,68,0.3)',borderWidth:1,padding:10,
