@@ -142,6 +142,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);transition:b
 .togrow{display:flex;gap:4px}
 .tog{padding:4px 11px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,.04);color:var(--text3);font-size:.71rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:var(--font)}
 .tog.on{background:#4f46e5;color:#fff;border-color:#4f46e5}
+.comp-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);font-size:.68rem;font-weight:700;color:#f59e0b;margin-left:6px}
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;color:var(--text3);text-align:center;min-height:140px}
 .eico{font-size:32px;margin-bottom:9px;opacity:.38}
 .ettl{font-size:.84rem;font-weight:600;margin-bottom:3px}
@@ -283,9 +284,30 @@ Selecione a Propriedade</div>
 <!-- Filtros -->
 <div class="fcard" id="filterCard" style="display:none">
   <div class="ftop"><span class="flbl">🔍 Filtros</span></div>
-  <div class="fgrid" style="max-width:320px">
-    <div class="fgrp"><div class="fgl">Período</div><select class="fsel" id="fPer" onchange="onPeriodChange()"><option value="7">Últimos 7 dias</option><option value="30" selected>Últimos 30 dias</option><option value="60">Últimos 60 dias</option><option value="90">Últimos 90 dias</option><option value="180">Últimos 6 meses</option><option value="365">Último ano</option><option value="custom">Personalizado</option></select></div>
+  <div class="fgrid">
+    <div class="fgrp"><div class="fgl">Período</div>
+      <select class="fsel" id="fPer" onchange="onPeriodChange()">
+        <option value="today">Hoje</option>
+        <option value="yesterday">Ontem</option>
+        <option value="month">Mês atual</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="30" selected>Últimos 30 dias</option>
+        <option value="60">Últimos 60 dias</option>
+        <option value="90">Últimos 90 dias</option>
+        <option value="180">Últimos 6 meses</option>
+        <option value="365">Último ano</option>
+        <option value="custom">Personalizado</option>
+      </select>
+    </div>
     <div class="fgrp" id="fCusW" style="display:none"><div class="fgl">Intervalo</div><div class="drange"><input class="di" type="date" id="fDS" onchange="onCustomDate()"/><span style="font-size:.68rem;color:var(--text3)">até</span><input class="di" type="date" id="fDE" onchange="onCustomDate()"/></div></div>
+    <div class="fgrp"><div class="fgl">Comparativo nos gráficos</div>
+      <select class="fsel" id="fComp" onchange="onCompChange()">
+        <option value="none">Sem comparativo</option>
+        <option value="auto">Período anterior (automático)</option>
+        <option value="custom">Personalizado</option>
+      </select>
+    </div>
+    <div class="fgrp" id="fCompCusW" style="display:none"><div class="fgl">Comparar com</div><div class="drange"><input class="di" type="date" id="fCDS"/><span style="font-size:.68rem;color:var(--text3)">até</span><input class="di" type="date" id="fCDE" onchange="onCompCustomDate()"/></div></div>
   </div>
 </div>
 
@@ -549,6 +571,22 @@ async function fetchAll(){
     G.raw.months=parseRep(q2);
     G.raw.useDia=useDia;
     console.log('✅ histórico: '+G.raw.months.length+' linhas · modo:'+(useDia?'dia':'mês'));
+    // Busca período comparativo
+    var compDr=getCompDR();
+    G.raw.monthsComp=[];
+    if(compDr){
+    try{
+    var q2c=await ga4ReqSafe({
+      dateRanges:[compDr],
+      dimensions:[{name:useDia?'date':'yearMonth'},{name:'sessionSource'}],
+      metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'},{name:'advertiserAdCost'}],
+      orderBys:[{dimension:{dimensionName:useDia?'date':'yearMonth'}}],
+      limit:500
+    },tmo);
+    G.raw.monthsComp=parseRep(q2c);
+    console.log('✅ comparativo: '+G.raw.monthsComp.length+' linhas');
+  }catch(ce){console.warn('⚠️ Comparativo:',ce.message);}
+}
 
     setLoad(true,'Buscando produtos, campanhas e estados...');
     var res=await Promise.all([
@@ -612,22 +650,83 @@ async function fetchAll(){
   }
 }
 
-function getDR(){var p=$('fPer').value;if(p==='custom')return{startDate:$('fDS').value||'30daysAgo',endDate:$('fDE').value||'today'};return{startDate:p+'daysAgo',endDate:'today'};}
-function getDias(){var p=$('fPer').value;if(p==='custom'){var ds=$('fDS').value,de=$('fDE').value;if(ds&&de){return Math.max(1,Math.round((new Date(de)-new Date(ds))/(1000*60*60*24)));} return 30;}return parseInt(p)||30;}
-function onPeriodChange(){var p=$('fPer').value;$('fCusW').style.display=p==='custom'?'':'none';if(p!=='custom'&&G.token){Object.keys(CACHE).forEach(function(k){delete CACHE[k];});fetchAll();}}
+function fmtDate(d){var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
+function getDR(){
+  var p=$('fPer').value;
+  var today=new Date();
+  if(p==='custom')return{startDate:$('fDS').value||'30daysAgo',endDate:$('fDE').value||'today'};
+  if(p==='today')return{startDate:'today',endDate:'today'};
+  if(p==='yesterday'){var y=new Date(today);y.setDate(y.getDate()-1);var ys=fmtDate(y);return{startDate:ys,endDate:ys};}
+  if(p==='month'){var ms=new Date(today.getFullYear(),today.getMonth(),1);return{startDate:fmtDate(ms),endDate:'today'};}
+  return{startDate:p+'daysAgo',endDate:'today'};
+}
+function getDias(){
+  var p=$('fPer').value;
+  if(p==='custom'){var ds=$('fDS').value,de=$('fDE').value;if(ds&&de){return Math.max(1,Math.round((new Date(de)-new Date(ds))/(1000*60*60*24)));} return 30;}
+  if(p==='today')return 1;
+  if(p==='yesterday')return 1;
+  if(p==='month'){var today=new Date();return today.getDate();}
+  return parseInt(p)||30;
+}
+function getCompDR(){
+  var comp=$('fComp').value;
+  if(comp==='none')return null;
+  if(comp==='custom'){var ds=$('fCDS').value,de=$('fCDE').value;if(ds&&de)return{startDate:ds,endDate:de};return null;}
+  // auto: calcula período anterior de mesmo tamanho
+  var dr=getDR();
+  var today=new Date();
+  var startD,endD;
+  var p=$('fPer').value;
+  if(p==='custom'&&$('fDS').value&&$('fDE').value){
+    startD=new Date($('fDS').value);endD=new Date($('fDE').value);
+  } else if(p==='today'){
+    startD=new Date(today);endD=new Date(today);
+  } else if(p==='yesterday'){
+    var y=new Date(today);y.setDate(y.getDate()-1);startD=new Date(y);endD=new Date(y);
+  } else if(p==='month'){
+    startD=new Date(today.getFullYear(),today.getMonth(),1);endD=new Date(today);
+  } else {
+    var dias=parseInt(p)||30;
+    endD=new Date(today);endD.setDate(endD.getDate()-1);
+    startD=new Date(today);startD.setDate(startD.getDate()-dias*2);
+    endD.setDate(endD.getDate()-dias+1);
+    // período anterior = mesmo número de dias, imediatamente antes
+    var d2=new Date(today);d2.setDate(d2.getDate()-dias-1);
+    var d1=new Date(today);d1.setDate(d1.getDate()-dias*2);
+    return{startDate:fmtDate(d1),endDate:fmtDate(d2)};
+  }
+  var dias2=Math.max(1,Math.round((endD-startD)/(1000*60*60*24))+1);
+  var cEnd=new Date(startD);cEnd.setDate(cEnd.getDate()-1);
+  var cStart=new Date(cEnd);cStart.setDate(cStart.getDate()-dias2+1);
+  return{startDate:fmtDate(cStart),endDate:fmtDate(cEnd)};
+}
+function onPeriodChange(){
+  var p=$('fPer').value;
+  $('fCusW').style.display=p==='custom'?'':'none';
+  if(p!=='custom'&&G.token){Object.keys(CACHE).forEach(function(k){delete CACHE[k];});fetchAll();}
+}
 function onCustomDate(){var ds=$('fDS').value,de=$('fDE').value;if(ds&&de){Object.keys(CACHE).forEach(function(k){delete CACHE[k];});fetchAll();}}
+function onCompChange(){
+  var c=$('fComp').value;
+  $('fCompCusW').style.display=c==='custom'?'':'none';
+  if(c!=='custom'&&G.filtered){renderLine(G.filtered.months);renderCostLine(G.filtered.months);renderRoasLine(G.filtered.months);}
+}
+function onCompCustomDate(){
+  var ds=$('fCDS').value,de=$('fCDE').value;
+  if(ds&&de&&G.token){Object.keys(CACHE).forEach(function(k){delete CACHE[k];});fetchAll();}
+}
 
 function applyFilters(){
   if(!G.raw.main.length)return;
-  G.filtered={main:G.raw.main,months:G.raw.months,first:G.raw.first,last:G.raw.last,items:G.raw.items,states:G.raw.states,sessData:G.raw.sessData||[],funnel:G.raw.funnel||[]};
+  G.filtered={main:G.raw.main,months:G.raw.months,monthsComp:G.raw.monthsComp||[],first:G.raw.first,last:G.raw.last,items:G.raw.items,states:G.raw.states,sessData:G.raw.sessData||[],funnel:G.raw.funnel||[]};
   renderAll(G.filtered);
 }
 
 function renderAll(d){
   renderKPIs(d.main);
-  renderLine(d.months);
-  renderRoasLine(d.months);
-  renderCostLine(d.months);
+  renderLine(d.months,d.monthsComp||[]);
+  renderCostLine(d.months,d.monthsComp||[]);
+  renderRoasLine(d.months,d.monthsComp||[]);
   renderDonut(d.main);
   renderDonutByKey('chan','cDonutChan','eDonutChan','dLegChan',d.main,function(r){return r.sessiondefaultchannelgrouping||'(direct)';});
   renderDonutByKey('med','cDonutMed','eDonutMed','dLegMed',d.main,function(r){return r.sessionmedium||'(none)';});
@@ -664,7 +763,7 @@ function setLM(m){
   if(G.filtered)renderLine(G.filtered.months);
 }
 
-function renderLine(data){
+function renderLine(data,dataComp){
   destroyChart('line');
   if(!data||!data.length){showEmp('cLine','eLine',true);return;}
   showEmp('cLine','eLine',false);
@@ -687,22 +786,56 @@ function renderLine(data){
   var vals=keys.map(function(k){return G.lineMode==='value'?periods[k].rev:periods[k].qty;});
   var maxVal=Math.max.apply(null,vals)||1;
   var isDark=getDark();
+  var datasets=[{
+    label:G.lineMode==='value'?'Período atual':'Compras',data:vals,
+    borderColor:'#4f46e5',
+    backgroundColor:function(ctx){var chart=ctx.chart;var a=chart.chartArea;if(!a)return'rgba(79,70,229,0.1)';var g=chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,'rgba(79,70,229,0.35)');g.addColorStop(1,'rgba(79,70,229,0.01)');return g;},
+    fill:true,tension:0.4,pointBackgroundColor:'#fff',pointBorderColor:'#4f46e5',pointBorderWidth:2,
+    pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5
+  }];
+  // Comparativo
+  var hasComp=$('fComp').value!=='none'&&dataComp&&dataComp.length;
+  if(hasComp){
+    var periodsC={};
+    dataComp.forEach(function(r){
+      var k=useDia?(r.date||''):(r.yearmonth||'');
+      if(!k)return;
+      if(!periodsC[k])periodsC[k]={rev:0,qty:0};
+      periodsC[k].rev+=safeN(r.purchaserevenue||0);
+      periodsC[k].qty+=safeN(r.ecommercepurchases||0);
+    });
+    var keysC=Object.keys(periodsC).sort();
+    var valsC=keysC.map(function(k){return G.lineMode==='value'?periodsC[k].rev:periodsC[k].qty;});
+    // Alinha pelo índice (mesmo número de pontos)
+    var labelsC=keysC.map(function(k){
+      if(useDia){var y=k.slice(0,4),m=k.slice(4,6),d=k.slice(6,8);return new Date(y,parseInt(m)-1,parseInt(d)).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});}
+      else{var y=k.slice(0,4),mo=k.slice(4,6);return new Date(y,parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});}
+    });
+    // Usa labels do período atual mas dados do comparativo por posição
+    var valsAligned=labels.map(function(_,i){return valsC[i]!==undefined?valsC[i]:null;});
+    datasets.push({
+      label:'Período anterior',data:valsAligned,
+      borderColor:'#f59e0b',borderDash:[5,4],
+      backgroundColor:'transparent',
+      fill:false,tension:0.4,
+      pointBackgroundColor:'#f59e0b',pointBorderColor:'#f59e0b',pointBorderWidth:2,
+      pointRadius:useDia&&keys.length>30?0:3,pointHoverRadius:5,borderWidth:2,
+      spanGaps:true
+    });
+    var compDr=getCompDR();
+    if(compDr&&sub)sub.textContent=(useDia?'Dia a dia':'Mensal')+' · comparando com '+compDr.startDate+' a '+compDr.endDate;
+  }
   G.charts.line=new Chart($('cLine').getContext('2d'),{
     type:'line',
-    data:{labels:labels,datasets:[{
-      label:G.lineMode==='value'?'Receita R$':'Compras',data:vals,
-      borderColor:'#4f46e5',
-      backgroundColor:function(ctx){var chart=ctx.chart;var a=chart.chartArea;if(!a)return'rgba(79,70,229,0.1)';var g=chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,'rgba(79,70,229,0.35)');g.addColorStop(1,'rgba(79,70,229,0.01)');return g;},
-      fill:true,tension:0.4,pointBackgroundColor:'#fff',pointBorderColor:'#4f46e5',pointBorderWidth:2,
-      pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5
-    }]},
+    data:{labels:labels,datasets:datasets},
     options:{
-  responsive:true,aspectRatio:window.innerWidth>768?4:2.5,
+      responsive:true,aspectRatio:window.innerWidth>768?4:2.5,
       interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{display:false},datalabels:{display:false},
+        legend:{display:hasComp,position:'top',labels:{color:tickColor(),font:{size:11},boxWidth:16,padding:12}},
+        datalabels:{display:false},
         tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(79,70,229,0.3)',borderWidth:1,padding:10,
-          callbacks:{label:function(c){return G.lineMode==='value'?' '+brl(c.raw):' '+num(c.raw)+' compras';}}}
+          callbacks:{label:function(c){return' '+c.dataset.label+': '+(G.lineMode==='value'?brl(c.raw):num(c.raw)+' compras');}}}
       },
       scales:{
         x:{grid:{color:gridColor()},ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}},
@@ -711,7 +844,6 @@ function renderLine(data){
     }
   });
 }
-
 function buildBarChart(key,canvasId,emptyId,labels,vals,colors,fmt,horizontal,inlineLabels){
   destroyChart(key);
   if(!labels.length){showEmp(canvasId,emptyId,true);return;}
@@ -748,19 +880,13 @@ function buildBarChart(key,canvasId,emptyId,labels,vals,colors,fmt,horizontal,in
     options:opts
   });
 }
-function renderRoasLine(data){
+function renderRoasLine(data,dataComp){
   destroyChart('roasLine');
   var useDia=G.raw.useDia;
   var sub=$('roasLineSubtitle');
   if(sub)sub.textContent=useDia?'Dia a dia':'Evolução mensal';
   var periods={};
-  data.forEach(function(r){
-    var k=useDia?(r.date||''):(r.yearmonth||'');
-    if(!k)return;
-    if(!periods[k])periods[k]={rev:0,cost:0};
-    periods[k].rev+=safeN(r.purchaserevenue||0);
-    periods[k].cost+=safeN(r.advertiseradcost||0);
-  });
+  data.forEach(function(r){var k=useDia?(r.date||''):(r.yearmonth||'');if(!k)return;if(!periods[k])periods[k]={rev:0,cost:0};periods[k].rev+=safeN(r.purchaserevenue||0);periods[k].cost+=safeN(r.advertiseradcost||0);});
   var keys=Object.keys(periods).sort();
   var hasCost=keys.some(function(k){return periods[k].cost>0;});
   if(!keys.length||!hasCost){showEmp('cRoasLine','eRoasLine',true);return;}
@@ -769,28 +895,33 @@ function renderRoasLine(data){
     if(useDia){var y=k.slice(0,4),m=k.slice(4,6),d=k.slice(6,8);return new Date(y,parseInt(m)-1,parseInt(d)).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});}
     else{var y=k.slice(0,4),mo=k.slice(4,6);return new Date(y,parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});}
   });
-  var vals=keys.map(function(k){
-    var r=periods[k];
-    return r.cost>0?parseFloat((r.rev/r.cost).toFixed(2)):null;
-  });
+  var vals=keys.map(function(k){var r=periods[k];return r.cost>0?parseFloat((r.rev/r.cost).toFixed(2)):null;});
   var isDark=getDark();
+  var datasets=[{
+    label:'ROAS atual',data:vals,borderColor:'#10b981',
+    backgroundColor:function(ctx){var chart=ctx.chart;var a=chart.chartArea;if(!a)return'rgba(16,185,129,0.1)';var g=chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,'rgba(16,185,129,0.35)');g.addColorStop(1,'rgba(16,185,129,0.01)');return g;},
+    fill:true,tension:0.4,pointBackgroundColor:'#fff',pointBorderColor:'#10b981',pointBorderWidth:2,
+    pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5,spanGaps:true
+  }];
+  var hasComp=$('fComp').value!=='none'&&dataComp&&dataComp.length;
+  if(hasComp){
+    var periodsC={};
+    dataComp.forEach(function(r){var k=useDia?(r.date||''):(r.yearmonth||'');if(!k)return;if(!periodsC[k])periodsC[k]={rev:0,cost:0};periodsC[k].rev+=safeN(r.purchaserevenue||0);periodsC[k].cost+=safeN(r.advertiseradcost||0);});
+    var keysC=Object.keys(periodsC).sort();
+    var valsC=keysC.map(function(k){var r=periodsC[k];return r.cost>0?parseFloat((r.rev/r.cost).toFixed(2)):null;});
+    var valsAligned=labels.map(function(_,i){return valsC[i]!==undefined?valsC[i]:null;});
+    datasets.push({label:'ROAS anterior',data:valsAligned,borderColor:'#06b6d4',borderDash:[5,4],backgroundColor:'transparent',fill:false,tension:0.4,pointBackgroundColor:'#06b6d4',pointBorderColor:'#06b6d4',pointBorderWidth:2,pointRadius:useDia&&keys.length>30?0:3,pointHoverRadius:5,borderWidth:2,spanGaps:true});
+  }
   G.charts.roasLine=new Chart($('cRoasLine').getContext('2d'),{
-    type:'line',
-    data:{labels:labels,datasets:[{
-      label:'ROAS',data:vals,
-      borderColor:'#10b981',
-      backgroundColor:function(ctx){var chart=ctx.chart;var a=chart.chartArea;if(!a)return'rgba(16,185,129,0.1)';var g=chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,'rgba(16,185,129,0.35)');g.addColorStop(1,'rgba(16,185,129,0.01)');return g;},
-      fill:true,tension:0.4,pointBackgroundColor:'#fff',pointBorderColor:'#10b981',pointBorderWidth:2,
-      pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5,
-      spanGaps:true
-    }]},
+    type:'line',data:{labels:labels,datasets:datasets},
     options:{
-  responsive:true,aspectRatio:window.innerWidth>768?4:2.5,
+      responsive:true,aspectRatio:window.innerWidth>768?4:2.5,
       interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{display:false},datalabels:{display:false},
+        legend:{display:hasComp,position:'top',labels:{color:tickColor(),font:{size:11},boxWidth:16,padding:12}},
+        datalabels:{display:false},
         tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(16,185,129,0.3)',borderWidth:1,padding:10,
-          callbacks:{label:function(c){return c.raw!==null?' ROAS: '+roasF(c.raw):'Sem custo';}}}
+          callbacks:{label:function(c){return c.raw!==null?' '+c.dataset.label+': '+roasF(c.raw):'Sem custo';}}}
       },
       scales:{
         x:{grid:{color:gridColor()},ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}},
@@ -800,7 +931,7 @@ function renderRoasLine(data){
   });
 }
 
-function renderCostLine(data){
+function renderCostLine(data,dataComp){
   destroyChart('costLine');
   var useDia=G.raw.useDia;
   var sub=$('costLineSubtitle');
@@ -823,22 +954,31 @@ function renderCostLine(data){
   var vals=keys.map(function(k){return periods[k].cost;});
   var maxVal=Math.max.apply(null,vals)||1;
   var isDark=getDark();
+  var datasets=[{
+    label:'Investimento atual',data:vals,
+    borderColor:'#ef4444',
+    backgroundColor:function(ctx){var chart=ctx.chart;var a=chart.chartArea;if(!a)return'rgba(239,68,68,0.1)';var g=chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,'rgba(239,68,68,0.35)');g.addColorStop(1,'rgba(239,68,68,0.01)');return g;},
+    fill:true,tension:0.4,pointBackgroundColor:'#fff',pointBorderColor:'#ef4444',pointBorderWidth:2,
+    pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5
+  }];
+  var hasComp=$('fComp').value!=='none'&&dataComp&&dataComp.length;
+  if(hasComp){
+    var periodsC={};
+    dataComp.forEach(function(r){var k=useDia?(r.date||''):(r.yearmonth||'');if(!k)return;if(!periodsC[k])periodsC[k]={cost:0};periodsC[k].cost+=safeN(r.advertiseradcost||0);});
+    var keysC=Object.keys(periodsC).sort();
+    var valsC=keysC.map(function(k){return periodsC[k].cost;});
+    var valsAligned=labels.map(function(_,i){return valsC[i]!==undefined?valsC[i]:null;});
+    datasets.push({label:'Investimento anterior',data:valsAligned,borderColor:'#f97316',borderDash:[5,4],backgroundColor:'transparent',fill:false,tension:0.4,pointBackgroundColor:'#f97316',pointBorderColor:'#f97316',pointBorderWidth:2,pointRadius:useDia&&keys.length>30?0:3,pointHoverRadius:5,borderWidth:2,spanGaps:true});
+  }
   G.charts.costLine=new Chart($('cCostLine').getContext('2d'),{
-    type:'line',
-    data:{labels:labels,datasets:[{
-      label:'Investimento',data:vals,
-      borderColor:'#ef4444',
-      backgroundColor:function(ctx){var chart=ctx.chart;var a=chart.chartArea;if(!a)return'rgba(239,68,68,0.1)';var g=chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,'rgba(239,68,68,0.35)');g.addColorStop(1,'rgba(239,68,68,0.01)');return g;},
-      fill:true,tension:0.4,pointBackgroundColor:'#fff',pointBorderColor:'#ef4444',pointBorderWidth:2,
-      pointRadius:useDia&&keys.length>30?0:4,pointHoverRadius:6,borderWidth:2.5
-    }]},
+    type:'line',data:{labels:labels,datasets:datasets},
     options:{
-    responsive:true,aspectRatio:window.innerWidth>768?4:2.5,
+      responsive:true,aspectRatio:window.innerWidth>768?4:2.5,
       interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{display:false},datalabels:{display:false},
-        tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(239,68,68,0.3)',borderWidth:1,padding:10,
-          callbacks:{label:function(c){return' '+brl(c.raw);}}}
+        legend:{display:hasComp,position:'top',labels:{color:tickColor(),font:{size:11},boxWidth:16,padding:12}},
+        datalabels:{display:false},
+        tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(239,68,68,0.3)',borderWidth:1,padding:10,callbacks:{label:function(c){return' '+c.dataset.label+': '+brl(c.raw);}}}
       },
       scales:{
         x:{grid:{color:gridColor()},ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}},
