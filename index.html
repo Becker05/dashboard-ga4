@@ -301,11 +301,11 @@ Selecione a Propriedade</div>
     </div>
     <div class="fgrp" id="fCusW" style="display:none"><div class="fgl">Intervalo</div><div class="drange"><input class="di" type="date" id="fDS" onchange="onCustomDate()"/><span style="font-size:.68rem;color:var(--text3)">até</span><input class="di" type="date" id="fDE" onchange="onCustomDate()"/></div></div>
     <div class="fgrp"><div class="fgl">Comparativo nos gráficos</div>
-      <select class="fsel" id="fComp" onchange="onCompChange()">
-        <option value="none">Sem comparativo</option>
-        <option value="auto">Período anterior (automático)</option>
-        <option value="custom">Personalizado</option>
-      </select>
+    <select class="fsel" id="fComp" onchange="onCompChange()">
+      <option value="none">Sem comparativo</option>
+      <option value="auto" selected>Período anterior (automático)</option>
+      <option value="custom">Personalizado</option>
+    </select>
     </div>
     <div class="fgrp" id="fCompCusW" style="display:none"><div class="fgl">Comparar com</div><div class="drange"><input class="di" type="date" id="fCDS"/><span style="font-size:.68rem;color:var(--text3)">até</span><input class="di" type="date" id="fCDE" onchange="onCompCustomDate()"/></div></div>
   </div>
@@ -779,6 +779,9 @@ function renderLine(data,dataComp){
     periods[k].qty+=safeN(r.ecommercepurchases||0);
   });
   var keys=Object.keys(periods).sort();
+  G._compKeysRoas=[];
+  G._compKeysCost=[];
+  G._compKeysLine=[];
   var labels=keys.map(function(k){
     if(useDia){var y=k.slice(0,4),m=k.slice(4,6),d=k.slice(6,8);return new Date(y,parseInt(m)-1,parseInt(d)).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});}
     else{var y=k.slice(0,4),mo=k.slice(4,6);return new Date(y,parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});}
@@ -805,6 +808,8 @@ function renderLine(data,dataComp){
       periodsC[k].qty+=safeN(r.ecommercepurchases||0);
     });
     var keysC=Object.keys(periodsC).sort();
+    G._compKeysCost=keysC;
+    G._compKeysLine=keysC;
     var valsC=keysC.map(function(k){return G.lineMode==='value'?periodsC[k].rev:periodsC[k].qty;});
     // Alinha pelo índice (mesmo número de pontos)
     var labelsC=keysC.map(function(k){
@@ -835,7 +840,20 @@ function renderLine(data,dataComp){
         legend:{display:hasComp,position:'top',labels:{color:tickColor(),font:{size:11},boxWidth:16,padding:12}},
         datalabels:{display:false},
         tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(79,70,229,0.3)',borderWidth:1,padding:10,
-          callbacks:{label:function(c){return' '+c.dataset.label+': '+(G.lineMode==='value'?brl(c.raw):num(c.raw)+' compras');}}}
+          callbacks:{
+  title:function(items){
+    var idx=items[0].dataIndex;
+    var t=items[0].label;
+    if($('fComp').value!=='none'&&G._compKeysLine&&G._compKeysLine[idx]){
+      var ck=G._compKeysLine[idx];
+      var useDia=G.raw.useDia;
+      var compLbl=useDia?(function(){var y=ck.slice(0,4),m=ck.slice(4,6),d=ck.slice(6,8);return new Date(y,parseInt(m)-1,parseInt(d)).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});})():(function(){var y=ck.slice(0,4),mo=ck.slice(4,6);return new Date(y,parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});})();
+      return t+' vs '+compLbl;
+    }
+    return t;
+  },
+  label:function(c){return' '+c.dataset.label+': '+(G.lineMode==='value'?brl(c.raw):num(c.raw)+' compras');}
+}}}
       },
       scales:{
         x:{grid:{color:gridColor()},ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}},
@@ -888,6 +906,9 @@ function renderRoasLine(data,dataComp){
   var periods={};
   data.forEach(function(r){var k=useDia?(r.date||''):(r.yearmonth||'');if(!k)return;if(!periods[k])periods[k]={rev:0,cost:0};periods[k].rev+=safeN(r.purchaserevenue||0);periods[k].cost+=safeN(r.advertiseradcost||0);});
   var keys=Object.keys(periods).sort();
+  G._compKeysRoas=[];
+  G._compKeysCost=[];
+  G._compKeysLine=[];
   var hasCost=keys.some(function(k){return periods[k].cost>0;});
   if(!keys.length||!hasCost){showEmp('cRoasLine','eRoasLine',true);return;}
   showEmp('cRoasLine','eRoasLine',false);
@@ -908,6 +929,8 @@ function renderRoasLine(data,dataComp){
     var periodsC={};
     dataComp.forEach(function(r){var k=useDia?(r.date||''):(r.yearmonth||'');if(!k)return;if(!periodsC[k])periodsC[k]={rev:0,cost:0};periodsC[k].rev+=safeN(r.purchaserevenue||0);periodsC[k].cost+=safeN(r.advertiseradcost||0);});
     var keysC=Object.keys(periodsC).sort();
+    G._compKeysCost=keysC;
+    G._compKeysLine=keysC;
     var valsC=keysC.map(function(k){var r=periodsC[k];return r.cost>0?parseFloat((r.rev/r.cost).toFixed(2)):null;});
     var valsAligned=labels.map(function(_,i){return valsC[i]!==undefined?valsC[i]:null;});
     datasets.push({label:'ROAS anterior',data:valsAligned,borderColor:'#06b6d4',borderDash:[5,4],backgroundColor:'transparent',fill:false,tension:0.4,pointBackgroundColor:'#06b6d4',pointBorderColor:'#06b6d4',pointBorderWidth:2,pointRadius:useDia&&keys.length>30?0:3,pointHoverRadius:5,borderWidth:2,spanGaps:true});
@@ -944,6 +967,9 @@ function renderCostLine(data,dataComp){
     periods[k].cost+=safeN(r.advertiseradcost||0);
   });
   var keys=Object.keys(periods).sort();
+  G._compKeysRoas=[];
+  G._compKeysCost=[];
+  G._compKeysLine=[];
   var hasCost=keys.some(function(k){return periods[k].cost>0;});
   if(!keys.length||!hasCost){showEmp('cCostLine','eCostLine',true);return;}
   showEmp('cCostLine','eCostLine',false);
@@ -966,6 +992,8 @@ function renderCostLine(data,dataComp){
     var periodsC={};
     dataComp.forEach(function(r){var k=useDia?(r.date||''):(r.yearmonth||'');if(!k)return;if(!periodsC[k])periodsC[k]={cost:0};periodsC[k].cost+=safeN(r.advertiseradcost||0);});
     var keysC=Object.keys(periodsC).sort();
+    G._compKeysCost=keysC;
+    G._compKeysLine=keysC;
     var valsC=keysC.map(function(k){return periodsC[k].cost;});
     var valsAligned=labels.map(function(_,i){return valsC[i]!==undefined?valsC[i]:null;});
     datasets.push({label:'Investimento anterior',data:valsAligned,borderColor:'#f97316',borderDash:[5,4],backgroundColor:'transparent',fill:false,tension:0.4,pointBackgroundColor:'#f97316',pointBorderColor:'#f97316',pointBorderWidth:2,pointRadius:useDia&&keys.length>30?0:3,pointHoverRadius:5,borderWidth:2,spanGaps:true});
@@ -978,7 +1006,18 @@ function renderCostLine(data,dataComp){
       plugins:{
         legend:{display:hasComp,position:'top',labels:{color:tickColor(),font:{size:11},boxWidth:16,padding:12}},
         datalabels:{display:false},
-        tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(239,68,68,0.3)',borderWidth:1,padding:10,callbacks:{label:function(c){return' '+c.dataset.label+': '+brl(c.raw);}}}
+        tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(239,68,68,0.3)',borderWidth:1,padding:10,callbacks:{
+  title:function(items){
+    var idx=items[0].dataIndex;var t=items[0].label;
+    if($('fComp').value!=='none'&&G._compKeysCost&&G._compKeysCost[idx]){
+      var ck=G._compKeysCost[idx];var useDia=G.raw.useDia;
+      var compLbl=useDia?(function(){var y=ck.slice(0,4),m=ck.slice(4,6),d=ck.slice(6,8);return new Date(y,parseInt(m)-1,parseInt(d)).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});})():(function(){var y=ck.slice(0,4),mo=ck.slice(4,6);return new Date(y,parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});})();
+      return t+' vs '+compLbl;
+    }
+    return t;
+  },
+  label:function(c){return' '+c.dataset.label+': '+brl(c.raw);}
+}}
       },
       scales:{
         x:{grid:{color:gridColor()},ticks:{color:tickColor(),maxTicksLimit:useDia?15:12,maxRotation:45}},
