@@ -345,9 +345,11 @@ tbody td:first-child{color:var(--text);font-weight:500}
   <div class="denied-title">Acesso não autorizado</div>
   <div class="denied-msg" id="deniedMsg">Este e-mail não possui acesso ao sistema.</div>
   <!-- ── CONTATO (CORREÇÃO 4) ── -->
-  <div class="denied-contact">
+<div class="denied-contact">
     Precisa de acesso? Entre em contato com o administrador:<br>
-    <a href="mailto:ad5experts@ad5experts.online">ad5experts@ad5experts.online</a>
+    <a href="mailto:contato@ad5.com.br">contato@ad5.com.br</a>
+    &nbsp;·&nbsp;
+    <a href="https://wa.me/5511995446469" target="_blank">WhatsApp ↗</a>
   </div>
   <button class="btn bg" onclick="doLogout()">← Tentar com outro e-mail</button>
 </div>
@@ -920,10 +922,16 @@ async function fetchAll(){
           if(!costMap[k])costMap[k]={cost:0};
           costMap[k].cost+=safeN(c[metricaUsada]||0);
         });
-        // Aplica custo em TODAS as linhas da chave (não apenas na 1ª)
+        // Aplica custo apenas na 1ª ocorrência da chave (evita duplicação na soma)
+        var appliedKeys={};
         G.raw.main.forEach(function(r){
           var k=(r.sessioncampaignname||'')+'||'+(r.sessionsource||'')+'||'+(r.sessionmedium||'');
-          r.advertiseradcost=costMap[k]?costMap[k].cost:0;
+          if(costMap[k]&&!appliedKeys[k]){
+            r.advertiseradcost=costMap[k].cost;
+            appliedKeys[k]=true;
+          } else {
+            r.advertiseradcost=0;
+          }
         });
         // Adiciona linhas de custo sem receita (campanhas com gasto mas sem venda)
         var existingKeys={};
