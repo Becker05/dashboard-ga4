@@ -891,11 +891,17 @@ async function fetchAll(){
           if(!costMap[k])costMap[k]={cost:0};
           costMap[k].cost+=safeN(c[metricaUsada]||0);
         });
-        // Aplica custo em TODAS as linhas da chave (não apenas na 1ª)
-        G.raw.main.forEach(function(r){
-          var k=(r.sessioncampaignname||'')+'||'+(r.sessionsource||'')+'||'+(r.sessionmedium||'');
-          r.advertiseradcost=costMap[k]?costMap[k].cost:0;
-        });
+      // Aplica custo apenas na 1ª ocorrência da chave (evita duplicação na soma)
+      var appliedKeys={};
+      G.raw.main.forEach(function(r){
+      var k=(r.sessioncampaignname||'')+'||'+(r.sessionsource||'')+'||'+(r.sessionmedium||'');
+      if(costMap[k]&&!appliedKeys[k]){
+        r.advertiseradcost=costMap[k].cost;
+        appliedKeys[k]=true;
+  } else {
+    r.advertiseradcost=0;
+  }
+});
         // Adiciona linhas de custo sem receita (campanhas com gasto mas sem venda)
         var existingKeys={};
         G.raw.main.forEach(function(r){
