@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="GA4 Dash">
 <link rel="apple-touch-icon" href="android-chrome-192x192.png">
-<title>Dashboard GA4</title>
+<title>Dashboard AD5</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
@@ -211,10 +211,12 @@ tbody td:first-child{color:var(--text);font-weight:500}
 .iv{font-weight:700;color:var(--text)}
 .lov{position:fixed;inset:0;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .22s}
 .lov.on{opacity:1;pointer-events:all}
-.lbox{background:var(--card);border-radius:14px;padding:30px 42px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.22)}
-.lsp{width:44px;height:44px;border:4px solid var(--border);border-top-color:#4f46e5;border-radius:50%;animation:spin .85s linear infinite;margin:0 auto 14px}
-.ltxt{font-size:.9rem;font-weight:600}
-.lstp{font-size:.74rem;color:var(--text3);margin-top:4px}
+.lbox{background:var(--card);border-radius:14px;padding:28px 36px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.22);min-width:260px}
+.lsp{width:40px;height:40px;border:3px solid var(--border);border-top-color:#4f46e5;border-radius:50%;animation:spin .85s linear infinite;margin:0 auto 14px}
+.ltxt{font-size:.88rem;font-weight:600;margin-bottom:6px}
+.lstp{font-size:.73rem;color:var(--text3);margin-top:2px;min-height:18px}
+.lprog-wrap{width:100%;background:var(--border);border-radius:4px;height:4px;margin-top:14px;overflow:hidden}
+.lprog{height:4px;background:linear-gradient(90deg,#4f46e5,#7c3aed);border-radius:4px;transition:width .4s ease;width:0%}
 .scard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);margin-bottom:22px}
 .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:14px}
 .sitem{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;transition:all .2s}
@@ -271,7 +273,7 @@ tbody td:first-child{color:var(--text);font-weight:500}
 </style>
 </head>
 <body data-theme="dark">
-<div class="lov" id="LOV"><div class="lbox"><div class="lsp"></div><div class="ltxt">Carregando dados do GA4</div><div class="lstp" id="LSTP">Aguarde...</div></div></div>
+<div class="lov" id="LOV"><div class="lbox"><div class="lsp"></div><div class="ltxt">Carregando dados</div><div class="lstp" id="LSTP">Conectando ao GA4...</div><div class="lprog-wrap"><div class="lprog" id="LPROG"></div></div></div></div>
 <div class="app">
 <header class="hdr">
   <div class="hdr-l">
@@ -312,15 +314,29 @@ tbody td:first-child{color:var(--text);font-weight:500}
 
 <!-- Login -->
 <div class="acard" id="authCard">
-  <div class="atitle">🔐 Acessar Dashboard</div>
-  <div class="adesc">Faça login com sua conta Google autorizada para acessar os dados.</div>
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+    <div style="width:48px;height:48px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <img src="android-chrome-192x192.png" style="width:34px;height:34px;border-radius:6px;object-fit:cover" onerror="this.style.display='none'">
+    </div>
+    <div>
+      <div style="font-size:1.1rem;font-weight:800;color:var(--text);letter-spacing:-.3px">Dashboard AD5</div>
+      <div style="font-size:.78rem;color:var(--text3);margin-top:2px">Performance de e-commerce em tempo real</div>
+    </div>
+  </div>
+  <div style="height:1px;background:var(--border);margin-bottom:18px"></div>
+  <div class="atitle" style="font-size:.92rem;margin-bottom:6px">Acesse sua conta</div>
+  <div class="adesc">Entre com o e-mail Google autorizado pelo administrador para visualizar os dados da sua loja.</div>
   <div class="brow">
     <button class="gsi-btn" id="btnGoogle" onclick="triggerLogin()">
       <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Entrar com Google
     </button>
   </div>
-  <div class="sb si on" id="authSt"><span>ℹ️</span><span>Use o e-mail cadastrado no sistema.</span></div>
+  <div style="display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 14px;border-radius:8px;background:rgba(79,70,229,.06);border:1px solid rgba(79,70,229,.15)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#4f46e5" stroke-width="2" stroke-linejoin="round"/></svg>
+    <span style="font-size:.73rem;color:var(--text3)">Acesso restrito. Seus dados são protegidos e nunca compartilhados.</span>
+  </div>
+  <div class="sb si on" id="authSt"><span>ℹ️</span><span>Use o e-mail cadastrado pelo administrador.</span></div>
 </div>
 
 <!-- Acesso negado -->
@@ -331,7 +347,7 @@ tbody td:first-child{color:var(--text);font-weight:500}
   <!-- ── CONTATO (CORREÇÃO 4) ── -->
   <div class="denied-contact">
     Precisa de acesso? Entre em contato com o administrador:<br>
-    <a href="mailto:contato@seudominio.com.br">contato@seudominio.com.br</a>
+    <a href="mailto:contato@ad5.com.br">contato@ad5.com.br</a>
   </div>
   <button class="btn bg" onclick="doLogout()">← Tentar com outro e-mail</button>
 </div>
@@ -366,8 +382,8 @@ Selecione a Propriedade</div>
         <option value="today">Hoje</option>
         <option value="yesterday">Ontem</option>
         <option value="month">Mês atual</option>
-        <option value="7"selected>Últimos 7 dias</option>
-        <option value="30">Últimos 30 dias</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="30" selected>Últimos 30 dias</option>
         <option value="60">Últimos 60 dias</option>
         <option value="90">Últimos 90 dias</option>
         <option value="180">Últimos 6 meses</option>
@@ -542,7 +558,17 @@ const getC=i=>PAL[i%PAL.length];
 
 function setSt(id,t,html){const e=$(id);if(!e)return;e.className='sb s'+t+' on';e.innerHTML=html;}
 function hideSt(id){const e=$(id);if(e)e.className='sb';}
-function setLoad(on,step){$('LOV').classList.toggle('on',on);if(step)$('LSTP').textContent=step;}
+var _loadSteps={'Iniciando...':5,'Buscando sessões e vendas...':25,'Buscando histórico...':45,'Buscando produtos, campanhas e estados...':65,'Buscando custos de mídia...':85};
+function setLoad(on,step){
+  $('LOV').classList.toggle('on',on);
+  if(step){
+    $('LSTP').textContent=step;
+    var pct=_loadSteps[step]||0;
+    var prog=$('LPROG');
+    if(prog)prog.style.width=pct+'%';
+  }
+  if(!on){var prog=$('LPROG');if(prog)prog.style.width='100%';setTimeout(function(){if(prog)prog.style.width='0%';},400);}
+}
 function toggleTheme(){G.theme=G.theme==='light'?'dark':'light';document.body.setAttribute('data-theme',G.theme);$('btnTheme').textContent=G.theme==='dark'?'☀️':'🌙';if(G.filtered)renderAll(G.filtered);}
 function showEmp(cid,eid,show){const c=$(cid),e=$(eid);if(c)c.style.display=show?'none':'block';if(e)e.style.display=show?'flex':'none';}
 function destroyChart(k){if(G.charts[k]){G.charts[k].destroy();delete G.charts[k];}}
@@ -655,6 +681,7 @@ function selectProp(id,nome,btn){
   G.propId=id;
   $('propSelect').value=id;
   $('hTitle').textContent='Dashboard '+nome;
+  document.title=nome+' — Dashboard AD5';
   document.querySelectorAll('.prop-btn').forEach(function(b){b.classList.remove('active');});
   if(btn)btn.classList.add('active');
   Object.keys(CACHE).forEach(function(k){delete CACHE[k];});
@@ -673,6 +700,7 @@ function doLogout(){
   G.token=null;G.propId='';G.userEmail='';G.properties=[];G.tokenTimestamp=0;
   clearTokenTimers();
   $('sessionBanner').classList.remove('on');
+  document.title='Dashboard AD5';
   hideDashboard();
   $('authCard').style.display='';
   $('deniedCard').style.display='none';
@@ -723,6 +751,7 @@ function initGsi(){
         scheduleTokenRenewal(); // CORREÇÃO 1: agenda renovação após login
         if(access.properties.length===1){
           $('hTitle').textContent='Dashboard '+access.properties[0].nome;
+          document.title=access.properties[0].nome+' — Dashboard AD5';
           showDashboard();
           fetchAll();
         }else{
@@ -779,7 +808,6 @@ async function ga4ReqSafe(body,timeoutMs){
       var e=await r.json().catch(function(){return{};});
       var m=(e&&e.error&&e.error.message)||'HTTP '+r.status;
       if(r.status===401){
-        // CORREÇÃO 1: tenta renovar antes de deslogar
         if(!G.tokenRenewing){
           console.warn('Token expirado detectado pela API. Tentando renovar...');
           renewTokenSilently();
@@ -787,8 +815,9 @@ async function ga4ReqSafe(body,timeoutMs){
         }
         throw new Error('Token expirado. Reconecte.');
       }
-      if(r.status===403)throw new Error('Sem permissão. Verifique o Property ID.');
-      throw new Error(m);
+      if(r.status===403)throw new Error('Sem permissão de acesso a esta propriedade GA4. Verifique se o e-mail '+G.userEmail+' tem acesso ao Property ID '+G.propId+' no Google Analytics.');
+      if(r.status===404)throw new Error('Propriedade GA4 não encontrada (ID: '+G.propId+'). Verifique se o ID está correto no cadastro.');
+      throw new Error('Erro ao buscar dados: '+m);
     }
     var data=await r.json();CACHE[cacheKey]={ts:now,data:data};return data;
   }catch(err){
@@ -891,17 +920,11 @@ async function fetchAll(){
           if(!costMap[k])costMap[k]={cost:0};
           costMap[k].cost+=safeN(c[metricaUsada]||0);
         });
-      // Aplica custo apenas na 1ª ocorrência da chave (evita duplicação na soma)
-      var appliedKeys={};
-      G.raw.main.forEach(function(r){
-      var k=(r.sessioncampaignname||'')+'||'+(r.sessionsource||'')+'||'+(r.sessionmedium||'');
-      if(costMap[k]&&!appliedKeys[k]){
-        r.advertiseradcost=costMap[k].cost;
-        appliedKeys[k]=true;
-  } else {
-    r.advertiseradcost=0;
-  }
-});
+        // Aplica custo em TODAS as linhas da chave (não apenas na 1ª)
+        G.raw.main.forEach(function(r){
+          var k=(r.sessioncampaignname||'')+'||'+(r.sessionsource||'')+'||'+(r.sessionmedium||'');
+          r.advertiseradcost=costMap[k]?costMap[k].cost:0;
+        });
         // Adiciona linhas de custo sem receita (campanhas com gasto mas sem venda)
         var existingKeys={};
         G.raw.main.forEach(function(r){
@@ -940,8 +963,16 @@ async function fetchAll(){
 
   }catch(err){
     console.error(err);
-    hideSkeletonKPIs(); // CORREÇÃO 7: remove skeleton em caso de erro
-    setSt('gSt','e','❌ '+err.message);
+    hideSkeletonKPIs();
+    var msg=err.message||'Erro desconhecido.';
+    var isPermission=msg.indexOf('permissão')>=0||msg.indexOf('não encontrada')>=0;
+    var isTimeout=msg.indexOf('Timeout')>=0;
+    var friendlyMsg=isPermission
+      ? '🔒 '+msg
+      : isTimeout
+        ? '⏱ Tempo limite excedido. Tente um período menor (ex: últimos 7 dias) ou clique em Atualizar.'
+        : '⚠️ '+msg;
+    setSt('gSt','e',friendlyMsg+(isPermission?' <a href="https://analytics.google.com" target="_blank" style="color:inherit;text-decoration:underline;margin-left:6px">Abrir GA4 ↗</a>':''));
     if(err.message.indexOf('expirado')>=0&&!G.tokenRenewing){G.token=null;doLogout();}
   }finally{
     setLoad(false);
