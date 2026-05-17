@@ -81,6 +81,24 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);transition:b
 .spin{width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ── DELTA DE VARIAÇÃO NOS KPIs ── */
+.kdelta{display:inline-flex;align-items:center;gap:3px;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;margin-top:4px}
+.kdelta.up{background:rgba(16,185,129,.13);color:#10b981}
+.kdelta.dn{background:rgba(239,68,68,.13);color:#ef4444}
+.kdelta.nt{background:rgba(0,0,0,.06);color:var(--text3)}
+[data-theme=dark] .kdelta.nt{background:rgba(255,255,255,.08)}
+.krow{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;flex-wrap:wrap}
+
+/* ── TOOLTIP DOS KPIs ── */
+.ktooltip-wrap{position:relative;display:inline-flex;align-items:center}
+.ktooltip-btn{width:15px;height:15px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:.6rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1;padding:0;font-family:var(--font);flex-shrink:0;transition:all .15s}
+.ktooltip-btn:hover{border-color:var(--accent);color:var(--accent)}
+.ktooltip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:.72rem;color:var(--text2);white-space:nowrap;z-index:100;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.12);line-height:1.55;min-width:160px;text-align:left}
+.ktooltip-btn:hover + .ktooltip{display:block}
+
+/* ── BADGE NOVO ── */
+.knew{position:absolute;top:10px;right:10px;font-size:.58rem;font-weight:800;padding:2px 6px;border-radius:10px;background:rgba(124,58,237,.15);color:#7c3aed;text-transform:uppercase;letter-spacing:.04em}
+
 /* ── SKELETON LOADING (CORREÇÃO 7) ── */
 @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
 .skeleton{border-radius:8px;background:linear-gradient(90deg,var(--border) 25%,rgba(255,255,255,.15) 50%,var(--border) 75%);background-size:800px 100%;animation:shimmer 1.4s infinite linear}
@@ -348,8 +366,8 @@ Selecione a Propriedade</div>
         <option value="today">Hoje</option>
         <option value="yesterday">Ontem</option>
         <option value="month">Mês atual</option>
-        <option value="7"selected>Últimos 7 dias</option>
-        <option value="30" >Últimos 30 dias</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="30" selected>Últimos 30 dias</option>
         <option value="60">Últimos 60 dias</option>
         <option value="90">Últimos 90 dias</option>
         <option value="180">Últimos 6 meses</option>
@@ -371,12 +389,72 @@ Selecione a Propriedade</div>
 
 <!-- KPIs -->
 <div class="kgrid" id="kpiGrid" style="display:none">
-  <div class="kcard" style="--kc:#4f46e5"><div class="kico" style="color:#4f46e5;background:rgba(79,70,229,.12)">💰</div><div class="klbl">Vendas Totais</div><div class="kval" id="kRev">—</div><div class="ksub" id="kRevS">Aguardando dados</div></div>
-  <div class="kcard" style="--kc:#ef4444"><div class="kico" style="color:#ef4444;background:rgba(239,68,68,.12)">📣</div><div class="klbl">Investimento</div><div class="kval" id="kCost">—</div><div class="ksub" id="kCostS">Custo de mídia</div></div>
-  <div class="kcard" style="--kc:#10b981"><div class="kico" style="color:#10b981;background:rgba(16,185,129,.12)">📈</div><div class="klbl">ROAS</div><div class="kval" id="kRoas">—</div><div class="ksub" id="kRoasS">Receita ÷ Custo</div></div>
-  <div class="kcard" style="--kc:#3b82f6"><div class="kico" style="color:#3b82f6;background:rgba(59,130,246,.12)">🛒</div><div class="klbl">Compras</div><div class="kval" id="kPur">—</div><div class="ksub" id="kPurS">Transações</div></div>
-  <div class="kcard" style="--kc:#f59e0b"><div class="kico" style="color:#f59e0b;background:rgba(245,158,11,.12)">🎫</div><div class="klbl">Ticket Médio</div><div class="kval" id="kTkt">—</div><div class="ksub" id="kTktS">Receita ÷ Compras</div></div>
-  <div class="kcard" style="--kc:#7c3aed"><div class="kico" style="color:#7c3aed;background:rgba(124,58,237,.12)">🎯</div><div class="klbl">Conversão</div><div class="kval" id="kConv">—</div><div class="ksub" id="kConvS">Compras ÷ Sessões</div></div>
+  <div class="kcard" style="--kc:#4f46e5">
+    <div class="kico" style="color:#4f46e5;background:rgba(79,70,229,.12)">💰</div>
+    <div class="klbl" style="display:flex;align-items:center;gap:5px">Vendas Totais
+      <div class="ktooltip-wrap"><button class="ktooltip-btn" aria-label="Info sobre Vendas Totais">i</button><div class="ktooltip">Receita total de e-commerce<br>no período selecionado.</div></div>
+    </div>
+    <div class="kval" id="kRev">—</div>
+    <div class="krow"><span class="ksub" id="kRevS">Aguardando dados</span><span class="kdelta nt" id="kRevD" style="display:none"></span></div>
+  </div>
+  <div class="kcard" style="--kc:#ef4444">
+    <div class="kico" style="color:#ef4444;background:rgba(239,68,68,.12)">📣</div>
+    <div class="klbl" style="display:flex;align-items:center;gap:5px">Investimento
+      <div class="ktooltip-wrap"><button class="ktooltip-btn" aria-label="Info sobre Investimento">i</button><div class="ktooltip">Custo de mídia importado<br>via GA4 (advertiserAdCost).</div></div>
+    </div>
+    <div class="kval" id="kCost">—</div>
+    <div class="krow"><span class="ksub" id="kCostS">Custo de mídia</span><span class="kdelta nt" id="kCostD" style="display:none"></span></div>
+  </div>
+  <div class="kcard" style="--kc:#10b981">
+    <div class="kico" style="color:#10b981;background:rgba(16,185,129,.12)">📈</div>
+    <div class="klbl" style="display:flex;align-items:center;gap:5px">ROAS
+      <div class="ktooltip-wrap"><button class="ktooltip-btn" aria-label="Info sobre ROAS">i</button><div class="ktooltip">Retorno sobre investimento.<br>Vendas ÷ Custo de mídia.</div></div>
+    </div>
+    <div class="kval" id="kRoas">—</div>
+    <div class="krow"><span class="ksub" id="kRoasS">Receita ÷ Custo</span><span class="kdelta nt" id="kRoasD" style="display:none"></span></div>
+  </div>
+  <div class="kcard" style="--kc:#3b82f6">
+    <div class="kico" style="color:#3b82f6;background:rgba(59,130,246,.12)">🛒</div>
+    <div class="klbl" style="display:flex;align-items:center;gap:5px">Compras
+      <div class="ktooltip-wrap"><button class="ktooltip-btn" aria-label="Info sobre Compras">i</button><div class="ktooltip">Total de transações de<br>e-commerce no período.</div></div>
+    </div>
+    <div class="kval" id="kPur">—</div>
+    <div class="krow"><span class="ksub" id="kPurS">Transações</span><span class="kdelta nt" id="kPurD" style="display:none"></span></div>
+  </div>
+  <div class="kcard" style="--kc:#f59e0b">
+    <div class="kico" style="color:#f59e0b;background:rgba(245,158,11,.12)">🎫</div>
+    <div class="klbl" style="display:flex;align-items:center;gap:5px">Ticket Médio
+      <div class="ktooltip-wrap"><button class="ktooltip-btn" aria-label="Info sobre Ticket Médio">i</button><div class="ktooltip">Valor médio por compra.<br>Receita ÷ Nº de compras.</div></div>
+    </div>
+    <div class="kval" id="kTkt">—</div>
+    <div class="krow"><span class="ksub" id="kTktS">Receita ÷ Compras</span><span class="kdelta nt" id="kTktD" style="display:none"></span></div>
+  </div>
+  <div class="kcard" style="--kc:#7c3aed">
+    <div class="kico" style="color:#7c3aed;background:rgba(124,58,237,.12)">🎯</div>
+    <div class="klbl" style="display:flex;align-items:center;gap:5px">Conversão
+      <div class="ktooltip-wrap"><button class="ktooltip-btn" aria-label="Info sobre Conversão">i</button><div class="ktooltip">Taxa de compra por sessão.<br>Compras ÷ Sessões totais.</div></div>
+    </div>
+    <div class="kval" id="kConv">—</div>
+    <div class="krow"><span class="ksub" id="kConvS">Compras ÷ Sessões</span><span class="kdelta nt" id="kConvD" style="display:none"></span></div>
+  </div>
+  <div class="kcard" style="--kc:#0891b2;position:relative">
+    <span class="knew">Novo</span>
+    <div class="kico" style="color:#0891b2;background:rgba(8,145,178,.12)">💸</div>
+    <div class="klbl" style="display:flex;align-items:center;gap:5px">CAC
+      <div class="ktooltip-wrap"><button class="ktooltip-btn" aria-label="Info sobre CAC">i</button><div class="ktooltip">Custo de aquisição por compra.<br>Investimento ÷ Nº de compras.</div></div>
+    </div>
+    <div class="kval" id="kCac">—</div>
+    <div class="krow"><span class="ksub" id="kCacS">Investimento ÷ Compras</span><span class="kdelta nt" id="kCacD" style="display:none"></span></div>
+  </div>
+  <div class="kcard" style="--kc:#dc2626;position:relative">
+    <span class="knew">Novo</span>
+    <div class="kico" style="color:#dc2626;background:rgba(220,38,38,.12)">🛒</div>
+    <div class="klbl" style="display:flex;align-items:center;gap:5px">Abandono Carrinho
+      <div class="ktooltip-wrap"><button class="ktooltip-btn" aria-label="Info sobre Abandono de Carrinho">i</button><div class="ktooltip">% que adicionou ao carrinho<br>mas não finalizou a compra.</div></div>
+    </div>
+    <div class="kval" id="kAband">—</div>
+    <div class="krow"><span class="ksub" id="kAbandS">Add to cart − Compras</span><span class="kdelta nt" id="kAbandD" style="display:none"></span></div>
+  </div>
 </div>
 
 <!-- Gráficos -->
@@ -475,15 +553,19 @@ function tickColor(){return getDark()?'#94a3b8':'#718096';}
 
 // ── CORREÇÃO 7: SKELETON NOS KPIs ──
 function showSkeletonKPIs(){
-  ['kRev','kCost','kRoas','kPur','kTkt','kConv'].forEach(function(id){
+  ['kRev','kCost','kRoas','kPur','kTkt','kConv','kCac','kAband'].forEach(function(id){
     var el=$(id);if(el){el.textContent='';el.classList.add('skeleton');}
   });
-  ['kRevS','kCostS','kRoasS','kPurS','kTktS','kConvS'].forEach(function(id){
+  ['kRevS','kCostS','kRoasS','kPurS','kTktS','kConvS','kCacS','kAbandS'].forEach(function(id){
     var el=$(id);if(el){el.textContent='';el.classList.add('skeleton');}
+  });
+  ['kRevD','kCostD','kRoasD','kPurD','kTktD','kConvD','kCacD','kAbandD'].forEach(function(id){
+    var el=$(id);if(el)el.style.display='none';
   });
 }
 function hideSkeletonKPIs(){
-  ['kRev','kCost','kRoas','kPur','kTkt','kConv','kRevS','kCostS','kRoasS','kPurS','kTktS','kConvS'].forEach(function(id){
+  ['kRev','kCost','kRoas','kPur','kTkt','kConv','kCac','kAband',
+   'kRevS','kCostS','kRoasS','kPurS','kTktS','kConvS','kCacS','kAbandS'].forEach(function(id){
     var el=$(id);if(el)el.classList.remove('skeleton');
   });
 }
@@ -747,6 +829,7 @@ async function fetchAll(){
     // Busca período comparativo
     var compDr=getCompDR();
     G.raw.monthsComp=[];
+    G.raw.funnelComp=[];
     if(compDr){
       try{
         var q2c=await ga4ReqSafe({
@@ -762,6 +845,11 @@ async function fetchAll(){
         console.warn('⚠️ Comparativo:',ce.message);
         _partialErrors.push('Dados comparativos indisponíveis.');
       }
+      // Funil comparativo para delta de abandono
+      try{
+        var qfc=await ga4ReqSafe({dateRanges:[compDr],dimensions:[{name:'eventName'}],metrics:[{name:'eventCount'}],dimensionFilter:{filter:{fieldName:'eventName',inListFilter:{values:['add_to_cart','purchase']}}},limit:5},tmo);
+        G.raw.funnelComp=parseRep(qfc);
+      }catch(fce){console.warn('⚠️ Funil comparativo:',fce.message);}
     }
 
     setLoad(true,'Buscando produtos, campanhas e estados...');
@@ -967,16 +1055,93 @@ function renderAll(d){
 }
 
 function renderKPIs(data){
-  hideSkeletonKPIs(); // CORREÇÃO 7: remove skeleton antes de preencher
+  hideSkeletonKPIs();
   var rev=0,cost=0,pur=0,sess=0;
-  data.forEach(function(r){rev+=safeN(r.purchaserevenue||0);cost+=safeN(r.advertiseradcost||0);pur+=safeN(r.ecommercepurchases||0);sess+=safeN(r.sessions||0);});
-  var roasV=cost>0?rev/cost:0;var tkt=pur>0?rev/pur:0;var conv=sess>0?(pur/sess)*100:0;
-  $('kRev').textContent=brl(rev);$('kRevS').textContent=num(pur)+' compras · '+num(sess)+' sessões';
-  $('kCost').textContent=cost>0?brl(cost):'Indisponível';$('kCostS').textContent=cost>0?'Custo real GA4':'Sem custo atribuído';
-  $('kRoas').textContent=cost>0?roasF(roasV):'N/A';$('kRoasS').textContent=cost>0?brl(rev)+' ÷ '+brl(cost):'Importe custo no GA4';
-  $('kPur').textContent=num(pur);$('kPurS').textContent='de '+num(sess)+' sessões';
-  $('kTkt').textContent=pur>0?brl(tkt):'—';$('kTktS').textContent='Receita ÷ Compras';
-  $('kConv').textContent=pct(conv);$('kConvS').textContent=num(pur)+' ÷ '+num(sess);
+  data.forEach(function(r){
+    rev+=safeN(r.purchaserevenue||0);
+    cost+=safeN(r.advertiseradcost||0);
+    pur+=safeN(r.ecommercepurchases||0);
+    sess+=safeN(r.sessions||0);
+  });
+  var roasV=cost>0?rev/cost:0;
+  var tkt=pur>0?rev/pur:0;
+  var conv=sess>0?(pur/sess)*100:0;
+  var cac=pur>0&&cost>0?cost/pur:0;
+
+  // Abandono de carrinho: vem do funil (G.raw.funnel)
+  var addToCart=0,purchases=pur;
+  if(G.raw.funnel){
+    G.raw.funnel.forEach(function(r){
+      if((r.eventname||'').toLowerCase()==='add_to_cart')addToCart=safeN(r.eventcount||0);
+    });
+  }
+  var abandono=addToCart>0?((addToCart-purchases)/addToCart)*100:0;
+
+  // Calcula período comparativo para deltas
+  var compData=G.filtered&&G.filtered.monthsComp||[];
+  var revC=0,costC=0,purC=0,sessC=0;
+  compData.forEach(function(r){
+    revC+=safeN(r.purchaserevenue||0);
+    costC+=safeN(r.advertiseradcost||0);
+    purC+=safeN(r.ecommercepurchases||0);
+    sessC+=safeN(r.sessions||0);
+  });
+  // Para abandono no comparativo, usa funil comparativo se disponível
+  var addToCartC=0,abandonoC=0;
+  if(G.raw.funnelComp){
+    G.raw.funnelComp.forEach(function(r){
+      if((r.eventname||'').toLowerCase()==='add_to_cart')addToCartC=safeN(r.eventcount||0);
+    });
+    abandonoC=addToCartC>0?((addToCartC-purC)/addToCartC)*100:0;
+  }
+  var roasC=costC>0?revC/costC:0;
+  var tktC=purC>0?revC/purC:0;
+  var convC=sessC>0?(purC/sessC)*100:0;
+  var cacC=purC>0&&costC>0?costC/purC:0;
+  var hasComp=$('fComp').value!=='none'&&compData.length>0;
+
+  function setDelta(id,curr,prev,fmt,invertido){
+    var el=$(id);if(!el)return;
+    if(!hasComp||prev===0){el.style.display='none';return;}
+    var diff=((curr-prev)/Math.abs(prev))*100;
+    var up=diff>=0;
+    var isGood=invertido?!up:up; // CAC e abandono: queda é bom
+    el.style.display='';
+    el.className='kdelta '+(Math.abs(diff)<0.5?'nt':isGood?'up':'dn');
+    el.textContent=(up?'▲ ':'▼ ')+Math.abs(diff).toFixed(1).replace('.',',')+'%';
+  }
+
+  $('kRev').textContent=brl(rev);
+  $('kRevS').textContent=num(pur)+' compras · '+num(sess)+' sessões';
+  setDelta('kRevD',rev,revC);
+
+  $('kCost').textContent=cost>0?brl(cost):'Indisponível';
+  $('kCostS').textContent=cost>0?'Custo real GA4':'Sem custo atribuído';
+  setDelta('kCostD',cost,costC,brl,true);
+
+  $('kRoas').textContent=cost>0?roasF(roasV):'N/A';
+  $('kRoasS').textContent=cost>0?brl(rev)+' ÷ '+brl(cost):'Importe custo no GA4';
+  setDelta('kRoasD',roasV,roasC);
+
+  $('kPur').textContent=num(pur);
+  $('kPurS').textContent='de '+num(sess)+' sessões';
+  setDelta('kPurD',pur,purC);
+
+  $('kTkt').textContent=pur>0?brl(tkt):'—';
+  $('kTktS').textContent='Receita ÷ Compras';
+  setDelta('kTktD',tkt,tktC);
+
+  $('kConv').textContent=pct(conv);
+  $('kConvS').textContent=num(pur)+' ÷ '+num(sess);
+  setDelta('kConvD',conv,convC);
+
+  $('kCac').textContent=cac>0?brl(cac):'—';
+  $('kCacS').textContent=cac>0?brl(cost)+' ÷ '+num(pur)+' compras':'Sem custo atribuído';
+  setDelta('kCacD',cac,cacC,brl,true);
+
+  $('kAband').textContent=addToCart>0?pct(abandono):'—';
+  $('kAbandS').textContent=addToCart>0?num(addToCart-purchases)+' de '+num(addToCart)+' não compraram':'Sem dados de funil';
+  setDelta('kAbandD',abandono,abandonoC,null,true);
 }
 
 function setLM(m){
