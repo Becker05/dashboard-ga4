@@ -60,7 +60,7 @@
     .font-display { font-family: 'Syne', sans-serif; }
 
     /* LAYOUT */
-    .container { max-width: 760px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    .container { max-width: 900px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
     section { padding: 80px 0; }
 
     /* ─── HERO ─── */
@@ -106,9 +106,9 @@
 
     .hero h1 {
       font-family: 'Syne', sans-serif;
-      font-size: clamp(42px, 6vw, 68px);
+      font-size: clamp(36px, 4.5vw, 58px);
       font-weight: 800;
-      line-height: 1.1;
+      line-height: 1.15;
       letter-spacing: -0.03em;
       margin-bottom: 24px;
       animation: fadeUp 0.6s 0.1s ease both;
@@ -117,12 +117,13 @@
     .hero h1 em {
       font-style: normal;
       color: var(--accent);
+      display: block;
     }
 
     .hero-sub {
-      font-size: clamp(16px, 2vw, 20px);
+      font-size: clamp(16px, 2vw, 19px);
       color: var(--light);
-      max-width: 560px;
+      max-width: 540px;
       line-height: 1.6;
       margin-bottom: 48px;
       animation: fadeUp 0.6s 0.2s ease both;
@@ -685,7 +686,7 @@
     <div class="container">
       <div class="hero-eyebrow">Para quem investe em tráfego pago</div>
       <h1>
-        <em>Dados que não mentem.</em><br>
+        <em>Dados que não mentem.</em>
         Campanhas que realmente funcionam.
       </h1>
       <p class="hero-sub">
