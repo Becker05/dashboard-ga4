@@ -7,7 +7,7 @@ const ASSETS = [
 self.addEventListener('install', function(e) {
   e.waitUntil(
     caches.open(CACHE_NAME)
-      .then(function(c) { return c.addAll(ASSETS); })
+      .then(function(c) { return c.addAll(ASSETS); }).then(()=>self.skipWaiting())
   );
 });
 
@@ -18,7 +18,7 @@ self.addEventListener('activate', function(e) {
         keys.filter(function(k) { return k.startsWith('ga4-dash-') && k !== CACHE_NAME; })
             .map(function(k) { return caches.delete(k); })
       );
-    })
+    }).then(()=>self.clients.claim())
   );
 });
 
