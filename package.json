@@ -1,0 +1,17 @@
+{
+  "name": "dashboard-ga4",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-dashboard-ga4 \"node --test tests/rules.cjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "@playwright/test": "^1.51.0",
+    "firebase": "^11.8.1",
+    "firebase-tools": "^14.0.0"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.15"
+  }
+}

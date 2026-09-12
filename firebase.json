@@ -1,10 +1,13 @@
 {
+  "firestore": {"rules":"firestore.rules"},
+  "emulators": {"firestore":{"port":8085},"ui":{"enabled":false}},
   "hosting": {
     "public": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "scripts/**", "tests/**", "*.md", "package*.json", "firestore.rules", "*-debug.log"
     ]
   }
 }

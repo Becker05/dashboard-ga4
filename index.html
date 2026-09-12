@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="android-chrome-192x192.png">
 <title>Dashboard GA4</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="./vendor/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -18,6 +19,8 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+import {createService} from './goals-service.mjs';
+import {mountGoals} from './goals-ui.mjs';
 const firebaseConfig = {
   apiKey: "AIzaSyA54e-flHcg5ZQ1fUH8HqJFRQov643YZ4I",
   authDomain: "dashboard-ga4-98b00.firebaseapp.com",
@@ -27,26 +30,11 @@ const firebaseConfig = {
   appId: "1:320775384763:web:715d5bbd443d405d0d839e"
 };
 const app = initializeApp(firebaseConfig);
+window.goalService=createService(app);
+mountGoals(window.goalService);
 const db = getFirestore(app);
 window._checkUserAccess = async function(email) {
-  try {
-    const ref = doc(db, "allowed_users", email);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return { allowed: false, reason: "Email não cadastrado." };
-    const data = snap.data();
-    if (!data.active) return { allowed: false, reason: "Acesso inativo. Entre em contato." };
-    let properties = [];
-    if (data.properties && Array.isArray(data.properties) && data.properties.length > 0) {
-      properties = data.properties;
-    } else if (data.propertyId) {
-      properties = [{ id: data.propertyId, nome: data.nome || 'Propriedade' }];
-    }
-    if (properties.length === 0) return { allowed: false, reason: "Nenhuma propriedade configurada." };
-    return { allowed: true, properties: properties, nome: data.nome || "", plano: data.plano || "" };
-  } catch(e) {
-    console.error("Firestore erro:", e);
-    return { allowed: false, reason: "Erro ao verificar acesso: " + e.message };
-  }
+  return window.goalService.login(window._ga4LoginToken);
 };
 </script>
 <style>
@@ -465,8 +453,8 @@ Selecione a Propriedade</div>
   <div class="kcard" style="--kc:#0891b2;position:relative">
     <span class="knew">Novo</span>
     <div class="kico" style="color:#0891b2;background:rgba(8,145,178,.12)">💸</div>
-    <div class="klbl" style="display:flex;align-items:center;gap:5px">CAC
-      <div class="ktooltip-wrap"><button class="ktooltip-btn" aria-label="Info sobre CAC">i</button><div class="ktooltip">Custo de aquisição por compra.<br>Investimento ÷ Nº de compras.</div></div>
+    <div class="klbl" style="display:flex;align-items:center;gap:5px">CPA
+      <div class="ktooltip-wrap"><button class="ktooltip-btn" aria-label="Info sobre CPA">i</button><div class="ktooltip">Custo de aquisição por compra.<br>Investimento ÷ Nº de compras.</div></div>
     </div>
     <div class="kval" id="kCac">—</div>
     <div class="krow"><span class="ksub" id="kCacS">Investimento ÷ Compras</span><span class="kdelta nt" id="kCacD" style="display:none"></span></div>
@@ -494,8 +482,8 @@ Selecione a Propriedade</div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Estado</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutSt" height="180"></canvas><div class="empty" id="eDonutSt" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegSt" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Categoria</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutCat" height="180"></canvas><div class="empty" id="eDonutCat" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegCat" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c12"><div class="chead"><div><div class="ctitle">ROAS por Campanha</div><div class="csub">Campanhas com custo atribuído</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><div class="roas-grid" id="roasGrid"><div class="empty" id="eRoas" style="display:flex"><div class="eico">💸</div><div class="ettl">Sem custo atribuído</div></div></div></div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">First Click</div><div class="csub">Primeiro toque do usuário</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cFirst" height="250"></canvas><div class="empty" id="eFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Last Click</div><div class="csub">Último toque antes da compra</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cLast" height="250"></canvas><div class="empty" id="eLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Aquisição do primeiro usuário</g/div><div class="csub">Primeiro toque do usuário</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cFirst" height="250"></canvas><div class="empty" id="eFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Aquisição da sessão</g/div><div class="csub">Campanha atribuída à sessão</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cLast" height="250"></canvas><div class="empty" id="eLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
   <!-- ── SESSÕES DENTRO DO CGRID (CORREÇÃO 6) ── -->
   <div class="ccard c12" id="sessCardInner">
     <div class="chead"><div><div class="ctitle">📊 Visão de Sessões</div><div class="csub">Comportamento do usuário no período</div></div><span class="drag-handle" title="Arrastar">⠿</span></div>
@@ -507,11 +495,11 @@ Selecione a Propriedade</div>
       <div class="sitem"><div class="slbl">Páginas / Sessão</div><div class="sval" id="sPpS">—</div></div>
       <div class="sitem"><div class="slbl">Bounce Rate</div><div class="sval" id="sBnc">—</div></div>
       <div class="sitem"><div class="slbl">Novos Usuários</div><div class="sval" id="sNew">—</div></div>
-      <div class="sitem"><div class="slbl">Usuários Recorrentes</div><div class="sval" id="sRet">—</div></div>
+      <div class="sitem"><div class="slbl">Ativos menos novos (estimativa)</div><div class="sval" id="sRet">—</div></div>
     </div>
   </div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — First Click</div><div class="csub">Campanhas que trouxeram mais sessões</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cSessFirst" height="250"></canvas><div class="empty" id="eSessFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — Last Click</div><div class="csub">Campanhas no último toque</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cSessLast" height="250"></canvas><div class="empty" id="eSessLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — primeiro usuário</div><div class="csub">Campanhas que trouxeram mais sessões</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cSessFirst" height="250"></canvas><div class="empty" id="eSessFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — campanha da sessão</div><div class="csub">Campanhas atribuídas às sessões</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cSessLast" height="250"></canvas><div class="empty" id="eSessLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
 </div>
 
 <!-- Funil -->
@@ -577,6 +565,7 @@ const G={
   charts:{},userEmail:''
 };
 const $=id=>document.getElementById(id);
+const safeHtml=html=>DOMPurify.sanitize(String(html),{FORBID_ATTR:['onerror','onload','onclick']});
 const safeN=v=>{if(v===null||v===undefined||v===''||v==='(not set)')return 0;const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?0:n;};
 const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'').replace(/^_|_$/g,'');
 const brl=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
@@ -587,7 +576,7 @@ const short=(s,n=24)=>s&&s.length>n?s.slice(0,n-1)+'...':(s||'—');
 const PAL=['#4f46e5','#10b981','#f59e0b','#ef4444','#3b82f6','#7c3aed','#ec4899','#06b6d4','#84cc16','#f97316'];
 const getC=i=>PAL[i%PAL.length];
 
-function setSt(id,t,html){const e=$(id);if(!e)return;e.className='sb s'+t+' on';e.innerHTML=html;}
+function setSt(id,t,html){const e=$(id);if(!e)return;e.className='sb s'+t+' on';e.innerHTML=safeHtml(html);}
 function hideSt(id){const e=$(id);if(e)e.className='sb';}
 var _loadSteps={'Iniciando...':5,'Buscando sessões e vendas...':25,'Buscando histórico...':45,'Buscando produtos, campanhas e estados...':65,'Buscando custos de mídia...':85};
 function setLoad(on,step){
@@ -694,22 +683,20 @@ function onTokenReceived(resp){
 
 function buildPropSelector(properties){
   var sel=$('propSelect');
-  sel.innerHTML=properties.map(function(p){return'<option value="'+p.id+'">'+p.nome+'</option>';}).join('');
-  $('propSelectWrap').style.display='';
-  if(properties.length>1){
-    $('propSelectorCard').style.display='';
-    $('propGrid').innerHTML=properties.map(function(p,i){
-      return'<button class="prop-btn'+(i===0?' active':'')+'" onclick="selectProp(\''+p.id+'\',\''+p.nome+'\',this)">'
-+'<span class="prop-btn-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="15" rx="2" stroke="#4f46e5" stroke-width="1.5" fill="rgba(79,70,229,0.1)"/><path d="M2 10h20" stroke="#4f46e5" stroke-width="1.5"/><path d="M8 22V16h8v6" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round"/><path d="M2 7L5 2h14l3 5" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="1.5" fill="#4f46e5"/></svg></span>'
-        +'<span class="prop-btn-nome">'+p.nome+'</span>'
-        +'<span class="prop-btn-id">ID: '+p.id+'</span>'
-        +'</button>';
-    }).join('');
-  }
+  sel.replaceChildren();$('propGrid').replaceChildren();
+  properties.forEach(function(p,i){
+    const option=document.createElement('option');option.value=p.key||p.id;option.textContent=(p.clientName?p.clientName+' / ':'')+p.nome;sel.append(option);
+    const button=document.createElement('button');button.className='prop-btn'+(i===0?' active':'');button.textContent=option.textContent+' · '+p.id;button.onclick=()=>selectProp(p.key||p.id,p.nome,button);$('propGrid').append(button);
+  });
+  $('propSelectWrap').style.display='';$('propSelectorCard').style.display=properties.length>1?'':'none';
+  return;
+
 }
 
 function selectProp(id,nome,btn){
-  G.propId=id;
+  if(G.fetching)return;
+  const selected=G.properties.find(p=>(p.key||p.id)===id);if(!selected)return;
+  G.propId=selected.id;G.propKey=id;
   $('propSelect').value=id;
   $('hTitle').textContent='Dashboard '+nome;
   document.title=nome+' — Dashboard AD5';
@@ -723,11 +710,15 @@ function selectProp(id,nome,btn){
 
 function onPropChange(){
   var id=$('propSelect').value;
-  var prop=G.properties.find(function(p){return p.id===id;});
-  if(prop)selectProp(prop.id,prop.nome,null);
+  var prop=G.properties.find(function(p){return (p.key||p.id)===id;});
+  if(prop)selectProp(prop.key||prop.id,prop.nome,null);
 }
 
 function doLogout(){
+  window.goalService?.logout();
+  window.dispatchEvent(new Event('dashboard-logout'));
+  G.raw={main:[],months:[],items:[],first:[],last:[],states:[]};G.filtered=null;
+  Object.keys(CACHE).forEach(k=>delete CACHE[k]);
   G.token=null;G.propId='';G.userEmail='';G.properties=[];G.tokenTimestamp=0;
   clearTokenTimers();
   $('sessionBanner').classList.remove('on');
@@ -745,7 +736,7 @@ function initGsi(){
   G.tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:CLIENT_ID,
     scope:SCOPE,
-    callback:async function(resp){
+    callback:G.handleLogin=async function(resp){
       // ── CORREÇÃO 1: centraliza no onTokenReceived se já logado (renovação) ──
       if(G.token && G.tokenTimestamp > 0){
         onTokenReceived(resp);
@@ -768,7 +759,11 @@ function initGsi(){
         if(!email){setSt('authSt','e','❌ Não foi possível obter o e-mail. Tente novamente.');$('btnGoogle').disabled=false;return;}
         G.userEmail=email;
         if(typeof window._checkUserAccess!=='function'){setSt('authSt','e','❌ Sistema não carregado. Recarregue a página.');return;}
-        var access=await window._checkUserAccess(email);
+        window._ga4LoginToken=G.token;
+        var access;
+        try {access=await window._checkUserAccess(email);} finally {window._ga4LoginToken=null;}
+        if(!access.properties.length)throw new Error('Nenhuma propriedade ativa autorizada.');
+        window.dispatchEvent(new CustomEvent('dashboard-access',{detail:access}));
         if(!access.allowed){
           $('authCard').style.display='none';$('deniedCard').style.display='';
           $('deniedMsg').textContent=access.reason||'Acesso não autorizado.';
@@ -776,6 +771,7 @@ function initGsi(){
         }
         G.properties=access.properties;
         G.propId=access.properties[0].id;
+        G.propKey=access.properties[0].key||G.propId;
         $('userEmail').textContent=email;
         $('authCard').style.display='none';$('deniedCard').style.display='none';
         buildPropSelector(access.properties);
@@ -798,11 +794,11 @@ function initGsi(){
   });
 }
 
-function triggerLogin(){
+async function triggerLogin(){
   if(!G.gsiReady||!G.tokenClient){setSt('authSt','w','⚠️ Aguarde e tente novamente.');initGsi();return;}
   setSt('authSt','i','<div class="spin"></div> Abrindo autenticação Google...');
   $('btnGoogle').disabled=true;
-  try{G.tokenClient.requestAccessToken({prompt:'select_account'});}
+  try{await G.handleLogin(await window.goalService.authenticate());}
   catch(err){setSt('authSt','e','❌ '+err.message);$('btnGoogle').disabled=false;}
 }
 
@@ -818,13 +814,14 @@ function parseRep(rep){
   var mets=(rep.metricHeaders||[]).map(function(h){return norm(h.name);});
   return(rep.rows||[]).map(function(row){
     var o={};
-    (row.dimensionValues||[]).forEach(function(v,i){o[dims[i]]=v.value||'';});
+    (row.dimensionValues||[]).forEach(function(v,i){o[dims[i]]=v.value||'(vazio)';});
     (row.metricValues||[]).forEach(function(v,i){o[mets[i]]=safeN(v.value);});
     return o;
   });
 }
 
 async function ga4ReqSafe(body,timeoutMs){
+  const requestProperty=G.propId,requestToken=G.token;
   timeoutMs=timeoutMs||15000;
   var cacheKey=JSON.stringify(body)+G.propId;
   var now=Date.now();
@@ -850,7 +847,16 @@ async function ga4ReqSafe(body,timeoutMs){
       if(r.status===404)throw new Error('Propriedade GA4 não encontrada (ID: '+G.propId+'). Verifique se o ID está correto no cadastro.');
       throw new Error('Erro ao buscar dados: '+m);
     }
-    var data=await r.json();CACHE[cacheKey]={ts:now,data:data};return data;
+    var data=await r.json();
+    if(G.propId!==requestProperty||G.token!==requestToken)throw new Error('Consulta descartada após mudança de acesso.');
+    const offset=Number(body.offset||0),count=(data.rows||[]).length;
+    if(data.rowCount>offset+count && count>0){
+      if(offset+count>=50000){_partialErrors.push('Consulta limitada a 50 mil linhas; reduza o período.');}
+      else {const more=await ga4ReqSafe({...body,offset:offset+count},timeoutMs);data.rows=data.rows.concat(more.rows||[]);}
+    }
+    if(data.metadata?.subjectToThresholding)_partialErrors.push('GA4 aplicou limiares a uma consulta.');
+    if(data.metadata?.samplingMetadatas?.length)_partialErrors.push('Uma consulta possui amostragem.');
+    CACHE[cacheKey]={ts:now,data:data};return data;
   }catch(err){
     clearTimeout(timer);
     if(err.name==='AbortError')throw new Error('Timeout: requisição demorou mais de '+Math.round(timeoutMs/1000)+'s. Tente um período menor.');
@@ -859,6 +865,7 @@ async function ga4ReqSafe(body,timeoutMs){
 }
 
 async function ga4FunnelReqSafe(body,timeoutMs){
+  const requestProperty=G.propId,requestToken=G.token;
   timeoutMs=timeoutMs||20000;
   var cacheKey='FUNNEL|'+JSON.stringify(body)+G.propId;
   var now=Date.now();
@@ -869,7 +876,7 @@ async function ga4FunnelReqSafe(body,timeoutMs){
     var r=await fetch('https://analyticsdata.googleapis.com/v1alpha/properties/'+G.propId+':runFunnelReport',{method:'POST',headers:{'Authorization':'Bearer '+G.token,'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal});
     clearTimeout(timer);
     if(!r.ok){var e=await r.json().catch(function(){return{};});throw new Error((e&&e.error&&e.error.message)||'HTTP '+r.status);}
-    var data=await r.json();CACHE[cacheKey]={ts:now,data:data};return data;
+    var data=await r.json();if(G.propId!==requestProperty||G.token!==requestToken)throw new Error('Consulta descartada após mudança de acesso.');CACHE[cacheKey]={ts:now,data:data};return data;
   }catch(err){clearTimeout(timer);if(err.name==='AbortError')throw new Error('Timeout no funil sequencial.');throw err;}
 }
 
@@ -878,16 +885,26 @@ function funnelBody(dr){
   return {dateRanges:[dr],funnel:{isOpenFunnel:false,steps:names.map(function(name){return{name:name,isDirectlyFollowedBy:false,filterExpression:{funnelEventFilter:{eventName:name}}};})},limit:'50'};
 }
 
+async function ga4OptionalReqSafe(body,timeoutMs){
+  const required=(body.dimensions||[]).map(d=>d.name).filter(n=>n.startsWith('customEvent:'));
+  if(G.availableDimensions && required.some(n=>!G.availableDimensions.has(n)))return null;
+  return ga4ReqSafe(body,timeoutMs);
+}
+
 // ── CORREÇÃO 5: rastreia erros parciais ──
 var _partialErrors = [];
 
 async function fetchAll(){
+  if(G.fetching)return;G.fetching=true;$('propSelect').disabled=true;
+  window.dispatchEvent(new CustomEvent('dashboard-property',{detail:{property:G.properties.find(p=>(p.key||p.id)===(G.propKey||G.propId)),token:G.token}}));
   _partialErrors = [];
   $('partialErr').classList.remove('on');
   setLoad(true,'Iniciando...');$('btnRef').disabled=true;
   showSkeletonKPIs(); // CORREÇÃO 7
   try{
     var dr=getDR();var dias=getDias();var tmo=dias<=30?12000:dias<=90?20000:30000;
+    G.availableDimensions=null;
+    try{const meta=await fetch('https://analyticsdata.googleapis.com/v1beta/properties/'+G.propId+'/metadata',{headers:{Authorization:'Bearer '+G.token}});if(meta.ok){const m=await meta.json();G.availableDimensions=new Set((m.dimensions||[]).map(d=>d.apiName));if(!G.availableDimensions.has('customEvent:attr_first_source'))_partialErrors.push('Atribuição auxiliar não configurada nesta propriedade. Relatórios nativos disponíveis.');}}catch(e){_partialErrors.push('Disponibilidade das dimensões não verificada.');}
     setLoad(true,'Buscando sessões e vendas...');
     var q1=await ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'sessionCampaignName'},{name:'sessionDefaultChannelGrouping'},{name:'region'}],metrics:[{name:'sessions'},{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'activeUsers'}],limit:5000},tmo);
     G.raw.main=parseRep(q1);
@@ -938,12 +955,12 @@ async function fetchAll(){
       ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'firstUserCampaignName'},{name:'firstUserSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],limit:500},tmo).catch(function(e){console.warn('first:',e.message);_partialErrors.push('First click indisponível.');return null;}),
       ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],limit:500},tmo).catch(function(e){console.warn('last:',e.message);_partialErrors.push('Last click indisponível.');return null;}),
       ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'region'}],metrics:[{name:'purchaseRevenue'},{name:'sessions'},{name:'ecommercePurchases'}],limit:200},tmo).catch(function(e){console.warn('states:',e.message);return null;}),
-      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionDefaultChannelGrouping'}],metrics:[{name:'sessions'},{name:'engagedSessions'},{name:'averageSessionDuration'},{name:'screenPageViewsPerSession'},{name:'bounceRate'},{name:'newUsers'},{name:'activeUsers'}],limit:50},tmo).catch(function(e){console.warn('sess:',e.message);return null;}),
+      ga4ReqSafe({dateRanges:[dr],metrics:[{name:'sessions'},{name:'engagedSessions'},{name:'averageSessionDuration'},{name:'screenPageViewsPerSession'},{name:'bounceRate'},{name:'newUsers'},{name:'activeUsers'}],limit:50},tmo).catch(function(e){console.warn('sess:',e.message);return null;}),
       ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'eventName'}],metrics:[{name:'eventCount'}],dimensionFilter:{filter:{fieldName:'eventName',inListFilter:{values:['page_view','view_item','add_to_cart','begin_checkout','add_shipping_info','add_payment_info','purchase']}}},limit:20},tmo).catch(function(e){console.warn('event volume:',e.message);return null;}),
-      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'customEvent:attr_first_source'},{name:'customEvent:attr_first_medium'},{name:'customEvent:attr_first_campaign'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:500},tmo).catch(function(e){console.warn('attr first:',e.message);_partialErrors.push('First Touch auxiliar ainda indisponível; dimensões novas podem levar 24–48h.');return null;}),
-      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'customEvent:attr_last_source'},{name:'customEvent:attr_last_medium'},{name:'customEvent:attr_last_campaign'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:500},tmo).catch(function(e){console.warn('attr last:',e.message);return null;}),
-      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'customEvent:attr_last_source'},{name:'customEvent:attr_last_medium'},{name:'customEvent:attr_last_campaign'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:1000},tmo).catch(function(e){console.warn('attr audit:',e.message);return null;}),
-      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'customEvent:attr_first_source'},{name:'customEvent:attr_last_source'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:500},tmo).catch(function(e){console.warn('attr matrix:',e.message);return null;}),
+      ga4OptionalReqSafe({dateRanges:[dr],dimensions:[{name:'customEvent:attr_first_source'},{name:'customEvent:attr_first_medium'},{name:'customEvent:attr_first_campaign'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:500},tmo).catch(function(e){console.warn('attr first:',e.message);_partialErrors.push('First Touch auxiliar ainda indisponível; dimensões novas podem levar 24–48h.');return null;}),
+      ga4OptionalReqSafe({dateRanges:[dr],dimensions:[{name:'customEvent:attr_last_source'},{name:'customEvent:attr_last_medium'},{name:'customEvent:attr_last_campaign'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:500},tmo).catch(function(e){console.warn('attr last:',e.message);return null;}),
+      ga4OptionalReqSafe({dateRanges:[dr],dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'customEvent:attr_last_source'},{name:'customEvent:attr_last_medium'},{name:'customEvent:attr_last_campaign'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:1000},tmo).catch(function(e){console.warn('attr audit:',e.message);return null;}),
+      ga4OptionalReqSafe({dateRanges:[dr],dimensions:[{name:'customEvent:attr_first_source'},{name:'customEvent:attr_last_source'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:500},tmo).catch(function(e){console.warn('attr matrix:',e.message);return null;}),
       ga4FunnelReqSafe(funnelBody(dr),tmo).catch(function(e){console.warn('sequential funnel:',e.message);_partialErrors.push('Funil sequencial indisponível; exibindo volume de eventos como contingência.');return null;})
     ]);
     G.raw.items=res[0]?parseRep(res[0]):[];
@@ -958,6 +975,8 @@ async function fetchAll(){
     G.raw.attrMatrix=res[9]?parseRep(res[9]):[];
     G.raw.funnel=res[10]&&res[10].funnelTable?parseRep(res[10].funnelTable):G.raw.eventVolume;
     G.raw.funnelIsSequential=!!(res[10]&&res[10].funnelTable);
+    G.raw.cartFunnel=null;
+    try {var cartBody=funnelBody(dr);cartBody.funnel.steps=cartBody.funnel.steps.filter(s=>['add_to_cart','purchase'].includes(s.name));G.raw.cartFunnel=parseRep((await ga4FunnelReqSafe(cartBody,tmo)).funnelTable);} catch(e){_partialErrors.push('Abandono de carrinho indisponível.');}
     console.log('✅ sessData:'+G.raw.sessData.length+' funnel:'+G.raw.funnel.length+' atribuição:'+G.raw.attrAudit.length);
 
     setLoad(true,'Buscando custos de mídia...');
@@ -1043,6 +1062,7 @@ async function fetchAll(){
     setSt('gSt','e',friendlyMsg+(isPermission?' <a href="https://analytics.google.com" target="_blank" style="color:inherit;text-decoration:underline;margin-left:6px">Abrir GA4 ↗</a>':''));
     if(err.message.indexOf('expirado')>=0&&!G.tokenRenewing){G.token=null;doLogout();}
   }finally{
+    G.fetching=false;$('propSelect').disabled=false;
     setLoad(false);
     $('btnRef').disabled=false;
   }
@@ -1132,7 +1152,7 @@ function onCompCustomDate(){
 }
 
 function applyFilters(){
-  if(!G.raw.main.length)return;
+  if(!G.raw.main)return;
   G.filtered={main:G.raw.main,months:G.raw.months,monthsComp:G.raw.monthsComp||[],first:G.raw.first,last:G.raw.last,items:G.raw.items,states:G.raw.states,sessData:G.raw.sessData||[],funnel:G.raw.funnel||[],attrFirst:G.raw.attrFirst||[],attrLast:G.raw.attrLast||[],attrAudit:G.raw.attrAudit||[],attrMatrix:G.raw.attrMatrix||[]};
   renderAll(G.filtered);
 }
@@ -1245,9 +1265,10 @@ function renderKPIs(data){
   $('kCacS').textContent=cac>0?brl(cost)+' ÷ '+num(pur)+' compras':'Sem custo atribuído';
   setDelta('kCacD',cac,cacC,brl,true);
 
-  $('kAband').textContent=addToCart>0?pct(abandono):'—';
-  $('kAbandS').textContent=addToCart>0?num(addToCart-purchases)+' de '+num(addToCart)+' não compraram':'Sem dados de funil';
-  setDelta('kAbandD',abandono,abandonoC,null,true);
+  const cart=G.raw.cartFunnel?.find(r=>r.funnelstepname?.endsWith('add_to_cart'));
+  $('kAband').textContent=cart&&cart.activeusers>0?pct(100*cart.abandonmentrate):'—';
+  $('kAbandS').textContent=cart?num(cart.abandonments)+' de '+num(cart.activeusers)+' usuários':'Sequência carrinho → compra indisponível';
+  $('kAbandD').style.display='none';
 }
 
 function setLM(m){
@@ -1545,7 +1566,7 @@ function renderDonut(data){
       tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,padding:10,callbacks:{label:function(c){return' '+brl(c.raw)+' ('+((c.raw/total)*100).toFixed(1)+'%)';}}}
     }}
   });
-  $('dLeg').innerHTML=labels.map(function(l,i){var p=((vals[i]/total)*100).toFixed(1);return'<div style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text2);min-width:120px"><span style="width:10px;height:10px;border-radius:3px;background:'+colors[i]+';flex-shrink:0"></span><span style="flex:1">'+short(l,18)+'</span><span style="font-weight:700;color:var(--text)">'+p+'%</span></div>';}).join('');
+  $('dLeg').innerHTML=safeHtml(labels.map(function(l,i){var p=((vals[i]/total)*100).toFixed(1);return'<div style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text2);min-width:120px"><span style="width:10px;height:10px;border-radius:3px;background:'+colors[i]+';flex-shrink:0"></span><span style="flex:1">'+short(l,18)+'</span><span style="font-weight:700;color:var(--text)">'+p+'%</span></div>';}).join(''));
 }
 
 function renderDonutByKey(key,canvasId,emptyId,legId,data,keyFn,valFn){
@@ -1569,7 +1590,7 @@ function renderDonutByKey(key,canvasId,emptyId,legId,data,keyFn,valFn){
       tooltip:{backgroundColor:isDark?'#1e2130':'#fff',titleColor:isDark?'#f1f5f9':'#1a202c',bodyColor:isDark?'#94a3b8':'#4a5568',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,padding:10,callbacks:{label:function(c){return' '+brl(c.raw)+' ('+((c.raw/total)*100).toFixed(1)+'%)';}}}
     }}
   });
-  $(legId).innerHTML=labels.map(function(l,i){var p=((vals[i]/total)*100).toFixed(1);return'<div style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text2);min-width:110px"><span style="width:10px;height:10px;border-radius:3px;background:'+colors[i]+';flex-shrink:0"></span><span style="flex:1">'+short(l,16)+'</span><span style="font-weight:700;color:var(--text)">'+p+'%</span></div>';}).join('');
+  $(legId).innerHTML=safeHtml(labels.map(function(l,i){var p=((vals[i]/total)*100).toFixed(1);return'<div style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text2);min-width:110px"><span style="width:10px;height:10px;border-radius:3px;background:'+colors[i]+';flex-shrink:0"></span><span style="flex:1">'+short(l,16)+'</span><span style="font-weight:700;color:var(--text)">'+p+'%</span></div>';}).join(''));
 }
 
 function aggBy(data,keyFn,valFn,includeZero){
@@ -1587,9 +1608,9 @@ function renderRoasChart(data){
   if(!entries.length){emp.style.display='flex';return;}
   emp.style.display='none';
   entries.forEach(function(e){
-    var color=e.roas>=4?'#10b981':e.roas>=2?'#f59e0b':'#ef4444';
+    var color='#4f46e5';
     var card=document.createElement('div');card.className='roas-card';card.style.setProperty('--rc',color);
-    card.innerHTML='<div class="roas-camp">'+short(e.camp,32)+'</div><div class="roas-val">'+roasF(e.roas)+'</div><div class="roas-sub">'+brl(e.rev)+' ÷ '+brl(e.cost)+'</div>';
+    card.innerHTML=safeHtml('<div class="roas-camp">'+short(e.camp,32)+'</div><div class="roas-val">'+roasF(e.roas)+'</div><div class="roas-sub">'+brl(e.rev)+' ÷ '+brl(e.cost)+'</div>');
     grid.appendChild(card);
   });
 }
@@ -1615,15 +1636,15 @@ function renderTable(data){
   var col=G.sortCol,asc=G.sortAsc;
   rows.sort(function(a,b){var va=[a.src,a.camp,a.rev,a.cost,a.cost>0?a.rev/a.cost:0,a.pur,a.pur>0?a.rev/a.pur:0,a.sess][col];var vb=[b.src,b.camp,b.rev,b.cost,b.cost>0?b.rev/b.cost:0,b.pur,b.pur>0?b.rev/b.pur:0,b.sess][col];if(typeof va==='string')return asc?va.localeCompare(vb):vb.localeCompare(va);return asc?va-vb:vb-va;});
   $('tCount').textContent=rows.length+' linhas';
-  var roasClass=function(v){return v>=4?'rg':v>=2?'ry':v>0?'rr':'rn';};
+  var roasClass=function(v){return 'rn';};
   if(!rows.length){$('tBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">Sem dados para os filtros selecionados</td></tr>';return;}
-  $('tBody').innerHTML=rows.map(function(r){var roas=r.cost>0?r.rev/r.cost:0;var tkt=r.pur>0?r.rev/r.pur:0;return'<tr><td>'+(r.src||'—')+'</td><td>'+short(r.camp,30)+'</td><td>'+brl(r.rev)+'</td><td>'+(r.cost>0?brl(r.cost):'<span class="rn">—</span>')+'</td><td class="'+roasClass(roas)+'">'+(r.cost>0?roasF(roas):'<span class="rn">—</span>')+'</td><td>'+num(r.pur)+'</td><td>'+(r.pur>0?brl(tkt):'<span class="rn">—</span>')+'</td><td>'+num(r.sess)+'</td></tr>';}).join('');
+  $('tBody').innerHTML=safeHtml(rows.map(function(r){var roas=r.cost>0?r.rev/r.cost:0;var tkt=r.pur>0?r.rev/r.pur:0;return'<tr><td>'+(r.src||'—')+'</td><td>'+short(r.camp,30)+'</td><td>'+brl(r.rev)+'</td><td>'+(r.cost>0?brl(r.cost):'<span class="rn">—</span>')+'</td><td class="'+roasClass(roas)+'">'+(r.cost>0?roasF(roas):'<span class="rn">—</span>')+'</td><td>'+num(r.pur)+'</td><td>'+(r.pur>0?brl(tkt):'<span class="rn">—</span>')+'</td><td>'+num(r.sess)+'</td></tr>';}).join(''));
 }
 
 function sortBy(col){if(G.sortCol===col)G.sortAsc=!G.sortAsc;else{G.sortCol=col;G.sortAsc=false;}if(G.filtered)renderTable(G.filtered.main);}
 
 function renderSessions(data){
-  if(!data||!data.length){$('sSess').textContent='—';return;}
+  if(!data||!data.length){['sSess','sEng','sEngR','sDur','sPpS','sBnc','sNew','sRet'].forEach(id=>$(id).textContent='—');return;}
   var sess=0,eng=0,dur=0,ppv=0,bnc=0,nw=0,act=0;
   data.forEach(function(r){var w=safeN(r.sessions||0);sess+=w;eng+=safeN(r.engagedsessions||0);dur+=safeN(r.averagesessionduration||0)*w;ppv+=safeN(r.screenpageviewspersession||0)*w;bnc+=safeN(r.bouncerate||0)*w;nw+=safeN(r.newusers||0);act+=safeN(r.activeusers||0);});
   var avgDur=sess>0?dur/sess:0;var avgPpv=sess>0?ppv/sess:0;var avgBnc=sess>0?bnc/sess:0;var engRate=sess>0?(eng/sess)*100:0;var ret=Math.max(0,act-nw);
@@ -1635,6 +1656,8 @@ function renderSessions(data){
 
 function renderFunnel(data){
   var wrap=$('funnelWrap');
+  $('funnelCard').querySelector('.ctitle').textContent=G.raw.funnelIsSequential?'Funil sequencial de usuários':'Volume de eventos';
+  $('funnelCard').querySelector('.csub').textContent=G.raw.funnelIsSequential?'Funil fechado; etapas indiretas':'Contagem independente; não mede conversão entre etapas';
   if(!data||!data.length){wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">Dados de funil indisponíveis para este período.</div>';return;}
   var STEPS=[
     {key:'page_view',label:'👁️ Page View',color:'#4f46e5'},
@@ -1664,12 +1687,12 @@ function renderFunnel(data){
   steps.forEach(function(s,i){
     var pctBar=maxVal>0?(s.val/maxVal)*100:0;
     html+='<div class="funnel-row"><div class="funnel-step">'+s.label+'</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:'+pctBar.toFixed(1)+'%;background:'+s.color+'">'+(pctBar>18?num(s.val):'')+'</div></div><div class="funnel-num">'+num(s.val)+'</div></div>';
-    if(i<steps.length-1){
+    if(G.raw.funnelIsSequential && i<steps.length-1){
       var next=steps[i+1];var conv=s.val>0?(next.val/s.val)*100:0;var cls=conv>=50?'green':conv>=25?'yellow':'red';
-      html+='<div class="farrow-row"><div style="min-width:140px;flex-shrink:0"></div><div class="farrow-line"><span>↓ conversão:</span><span class="farrow-badge '+cls+'">'+conv.toFixed(1).replace('.',',')+'%</span></div></div>';
+      html+='<div class="farrow-row"><div style="min-width:140px;flex-shrink:0"></div><div class="farrow-line"><span>↓ conclusão:</span><span class="farrow-badge '+cls+'">'+conv.toFixed(1).replace('.',',')+'%</span></div></div>';
     }
   });
-  wrap.innerHTML=html;
+  wrap.innerHTML=safeHtml(html);
 }
 
 function attrLabel(v,fallback){return v&&v!=='(not set)'?v:(v==='(not set)'?'(not set)':fallback||'(vazio)');}
@@ -1677,11 +1700,11 @@ function renderAttrRows(bodyId,data,mode){
   var body=$(bodyId);if(!body)return;
   if(!data||!data.length){body.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3)">Sem dados pós-implantação neste período.</td></tr>';return;}
   var rows=data.slice().sort(function(a,b){return safeN(b.purchaserevenue)-safeN(a.purchaserevenue);});
-  body.innerHTML=rows.map(function(r){
+  body.innerHTML=safeHtml(rows.map(function(r){
     if(mode==='audit')return '<tr><td>'+attrLabel(r.sessionsource)+' / '+attrLabel(r.sessionmedium)+'</td><td>'+attrLabel(r.attrlastsource)+' / '+attrLabel(r.attrlastmedium)+'</td><td>'+attrLabel(r.attrlastcampaign)+'</td><td>'+num(r.ecommercepurchases)+'</td><td>'+brl(r.purchaserevenue)+'</td></tr>';
     if(mode==='matrix')return '<tr><td>'+attrLabel(r.attrfirstsource)+'</td><td>'+attrLabel(r.attrlastsource)+'</td><td>'+num(r.ecommercepurchases)+'</td><td>'+brl(r.purchaserevenue)+'</td></tr>';
     var p=mode==='first'?'attrfirst':'attrlast';return '<tr><td>'+attrLabel(r[p+'source'])+' / '+attrLabel(r[p+'medium'])+'</td><td>'+attrLabel(r[p+'campaign'])+'</td><td>'+num(r.ecommercepurchases)+'</td><td>'+brl(r.purchaserevenue)+'</td></tr>';
-  }).join('');
+  }).join(''));
 }
 function renderAttribution(d){
   renderAttrRows('attrFirstBody',d.attrFirst,'first');
@@ -1722,11 +1745,11 @@ function renderInsights(d){
   var insights=[];
   if(bestOri)insights.push({ic:'#4f46e5',lbl:'🏆 Melhor Origem',txt:'<span class="iv">'+bestOri[0]+'</span> gerou <span class="iv">'+brl(bestOri[1].rev)+'</span> com <span class="iv">'+num(bestOri[1].pur)+'</span> compras.'});
   if(bestCamp)insights.push({ic:'#10b981',lbl:'📣 Top Campanha',txt:'<span class="iv">'+short(bestCamp[0],30)+'</span> liderou com <span class="iv">'+brl(bestCamp[1].rev)+'</span> em receita.'});
-  if(bestRoas){var rc=bestRoas[1]>=4?'#10b981':bestRoas[1]>=2?'#f59e0b':'#ef4444';insights.push({ic:rc,lbl:'💰 Melhor ROAS',txt:'<span class="iv">'+short(bestRoas[0],28)+'</span> retornou <span class="iv">'+roasF(bestRoas[1])+'</span> por R$ 1,00 investido.'});}
-  insights.push({ic:conv>=2?'#10b981':conv>=1?'#f59e0b':'#ef4444',lbl:'🎯 Taxa de Conversão',txt:'Conversão de <span class="iv">'+pct(conv)+'</span> — <span class="iv">'+num(pur)+'</span> compras de <span class="iv">'+num(sess)+'</span> sessões. Ticket médio: <span class="iv">'+brl(tkt)+'</span>.'});
-  if(cost>0)insights.push({ic:roas>=4?'#10b981':roas>=2?'#f59e0b':'#ef4444',lbl:'📊 ROAS Geral',txt:'ROAS de <span class="iv">'+roasF(roas)+'</span> — receita <span class="iv">'+brl(rev)+'</span> sobre investimento <span class="iv">'+brl(cost)+'</span>.'});
-  if(campEntries.length>1){var worst=campEntries[campEntries.length-1];insights.push({ic:'#ef4444',lbl:'⚠️ Atenção',txt:'Campanha <span class="iv">'+short(worst[0],28)+'</span> teve menor receita: <span class="iv">'+brl(worst[1].rev)+'</span>. Avalie otimizar.'});}
-  $('iGrid').innerHTML=insights.map(function(i){return'<div class="iitem" style="--ic:'+i.ic+'"><div class="ilbl">'+i.lbl+'</div><div class="itxt">'+i.txt+'</div></div>';}).join('');
+  if(bestRoas){var rc='#4f46e5';insights.push({ic:rc,lbl:'💰 Melhor ROAS',txt:'<span class="iv">'+short(bestRoas[0],28)+'</span> retornou <span class="iv">'+roasF(bestRoas[1])+'</span> por R$ 1,00 investido.'});}
+  insights.push({ic:'#4f46e5',lbl:'🎯 Taxa de Conversão',txt:'Conversão de <span class="iv">'+pct(conv)+'</span> — <span class="iv">'+num(pur)+'</span> compras de <span class="iv">'+num(sess)+'</span> sessões. Ticket médio: <span class="iv">'+brl(tkt)+'</span>.'});
+  if(cost>0)insights.push({ic:'#4f46e5',lbl:'📊 ROAS Geral',txt:'ROAS de <span class="iv">'+roasF(roas)+'</span> — receita <span class="iv">'+brl(rev)+'</span> sobre investimento <span class="iv">'+brl(cost)+'</span>.'});
+  if(campEntries.length>1){var worst=campEntries[campEntries.length-1];insights.push({ic:'#ef4444',lbl:'⚠️ Atenção',txt:'Campanha <span class="iv">'+short(worst[0],28)+'</span> teve menor receita: <span class="iv">'+brl(worst[1].rev)+'</span>. Menor receita, isoladamente, não indica ineficiência.'});}
+  $('iGrid').innerHTML=safeHtml(insights.map(function(i){return'<div class="iitem" style="--ic:'+i.ic+'"><div class="ilbl">'+i.lbl+'</div><div class="itxt">'+i.txt+'</div></div>';}).join(''));
 }
 
 Chart.register(ChartDataLabels);

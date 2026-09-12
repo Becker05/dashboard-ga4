@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signed() { return request.auth != null && request.auth.token.email_verified == true; }
+    function email() { return request.auth.token.email; }
+    function admin() { return signed() && get(/databases/$(database)/documents/platformAdmins/$(email())).data.active == true; }
+    function member(c) { return signed() && get(/databases/$(database)/documents/clients/$(c)).data.active == true
+      && get(/databases/$(database)/documents/users/$(email())).data.active == true
+      && get(/databases/$(database)/documents/clients/$(c)/members/$(email())).data.active == true; }
+    function editor(c) { return admin() || (member(c) && get(/databases/$(database)/documents/clients/$(c)/members/$(email())).data.role == 'manager'); }
+    function numeric(v) { return v == null || (v is number && v >= 0 && v <= 1000000000000); }
+    function valid(d,m) { return d.keys().hasOnly(['month','revenue','budget','orders','roas','cpa','version','updatedBy','updatedAt'])
+      && m.matches('^[0-9]{4}-(0[1-9]|1[0-2])$') && d.month == m
+      && numeric(d.revenue) && numeric(d.budget) && numeric(d.orders) && (d.orders == null || d.orders is int)
+      && numeric(d.roas) && numeric(d.cpa) && d.version is int && d.version > 0
+      && d.updatedBy == email() && d.updatedAt == request.time; }
+    match /platformAdmins/{e} { allow get: if signed() && e == email(); }
+    match /users/{e} {
+      allow get: if admin() || (signed() && e == email());
+      allow list,write: if admin();
+    }
+    match /allowed_users/{e} { allow get: if admin() || (signed() && e == email()); allow list: if admin(); }
+    match /clients/{c} {
+      allow get: if admin() || member(c);
+      allow list,write: if admin();
+      match /members/{e} {
+        allow get: if admin() || (signed() && e == email());
+        allow list: if admin();
+        allow write: if admin();
+      }
+      match /properties/{p} {
+        allow read: if admin() || member(c);
+        allow write: if admin();
+        match /goals/{m} {
+          allow read: if admin() || member(c);
+          allow create,update: if editor(c)
+            && get(/databases/$(database)/documents/clients/$(c)/properties/$(p)).data.active == true
+            && valid(request.resource.data,m)
+            && request.resource.data.version == (resource == null ? 1 : resource.data.version+1)
+            && getAfter(/databases/$(database)/documents/clients/$(c)/properties/$(p)/goals/$(m)/history/$(string(request.resource.data.version))).data == request.resource.data;
+          match /history/{v} {
+            allow read: if admin() || member(c);
+            allow create: if editor(c) && valid(request.resource.data,m)
+              && v == string(request.resource.data.version)
+              && getAfter(/databases/$(database)/documents/clients/$(c)/properties/$(p)/goals/$(m)).data == request.resource.data
+              && request.resource.data.version == (exists(/databases/$(database)/documents/clients/$(c)/properties/$(p)/goals/$(m)) ? get(/databases/$(database)/documents/clients/$(c)/properties/$(p)/goals/$(m)).data.version+1 : 1);
+          }
+        }
+      }
+    }
+  }
+}
