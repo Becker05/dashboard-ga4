@@ -16,12 +16,19 @@ export function monthWindow(month, today) {
   const last = new Date(Date.UTC(y,m,0)).getUTCDate();
   const startDate = month+'-01';
   const monthEnd = month+'-'+last;
-  const yesterday = new Date(today+'T00:00:00Z'); yesterday.setUTCDate(yesterday.getUTCDate()-1);
-  const endDate = [monthEnd,yesterday.toISOString().slice(0,10)].sort()[0];
+  const endDate = [monthEnd,today].sort()[0];
   const elapsed = endDate < startDate ? 0 : Number(endDate.slice(8,10));
   const priorMonth = new Date(Date.UTC(y,m-2,1)).toISOString().slice(0,7);
   const priorDays = new Date(Date.UTC(y,m-1,0)).getUTCDate();
   return {startDate,endDate,days:last,elapsed,comparison:elapsed ? {startDate:priorMonth+'-01',endDate:priorMonth+'-'+String(Math.min(elapsed,priorDays)).padStart(2,'0')} : null};
+}
+export function pacing(actual,target,key,period) {
+  if(actual==null || target==null || !period?.elapsed)return {expected:null,deviation:null};
+  const expected=['revenue','budget','orders'].includes(key)?target*period.elapsed/period.days:target;
+  return {expected,deviation:actual-expected};
+}
+export function monthlyActual(revenue,orders,cost) {
+  return {revenue,orders,budget:cost,roas:cost>0?revenue/cost:null,cpa:cost!=null&&orders>0?cost/orders:null};
 }
 export function assessment(actual,target,inverse=false) {
   if (actual == null || target == null) return {label:'Sem referência',ratio:null};

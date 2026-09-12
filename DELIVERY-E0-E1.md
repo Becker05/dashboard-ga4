@@ -2,13 +2,15 @@
 
 ## Uso
 
-Entre pelo Google. Cada propriedade autorizada mostra a seção **Metas e resultado mensal**. Selecione um mês; o resumo consulta dias completos até ontem no fuso da propriedade, independentemente dos filtros dos gráficos antigos.
+Entre pelo Google. Cada propriedade autorizada mostra a seção **Metas e resultado mensal**. Selecione um mês; o resumo consulta do dia 1 até hoje no mês atual (hoje parcial), o mês completo no passado e nenhum realizado no futuro, no fuso da propriedade, independentemente dos filtros dos gráficos antigos.
 
 Gestores e administradores podem salvar receita, orçamento, pedidos, ROAS mínimo e CPA máximo; campos vazios significam meta não definida. Visualizadores somente consultam. Copiar mês anterior preenche o formulário sem salvar automaticamente. Toda gravação gera uma versão imutável no histórico. Se outra pessoa já alterou a meta, recarregue antes de salvar.
 
 O administrador da plataforma encontra **Administração de clientes e acessos** ao final da página. Cada cadastro associa um e-mail a um cliente e a uma propriedade. Não concede permissão no GA4; essa autorização continua sendo gerenciada no Google Analytics. Usuários existentes migrados começam como visualizadores, com o operador autenticado do projeto como administrador.
 
-A moeda e o fuso de propriedades migradas são consultados no GA4 antes de apresentar metas. A Administração permite confirmar esses campos. Custo completo inicia como não confirmado: no resumo de metas, ROAS, CPA e gasto realizado ficam indisponíveis até o administrador verificar a cobertura real do custo GA4.
+A moeda e o fuso de propriedades migradas são consultados no GA4 antes de apresentar metas. A Administração permite confirmar esses campos. O custo disponível no GA4 é sempre consultado separadamente, no mesmo intervalo do realizado. Falha de custo não bloqueia receita e compras. Cobertura não validada gera aviso e impede avaliação de eficiência, mas não oculta o gasto nem índices calculáveis. Confirmar cobertura não importa investimento ausente. ROAS usa receita total de compras/gasto disponível; CPA usa gasto/compras, sem atribuição por campanha.
+
+Esperado até a data = meta mensal × dias considerados/dias do mês para receita, orçamento e pedidos. Desvio = realizado − esperado. ROAS e CPA não são rateados. Mês atual inclui hoje, com valores parciais sujeitos a processamento. Projeção é indicativa e também inclui esse dia parcial.
 
 ## Estrutura
 

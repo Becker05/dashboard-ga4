@@ -1,4 +1,4 @@
-import {fields,monthWindow,assessment} from './goals-core.mjs';
+import {fields,monthWindow,assessment,pacing,monthlyActual} from './goals-core.mjs';
 const labels={revenue:'Receita',budget:'Orçamento de mídia',orders:'Pedidos',roas:'ROAS mínimo',cpa:'CPA máximo'};
 export function mountGoals(service){
   let panel,p=null,token='',version=0,generation=0,access=null,goal=null,actual=null,previous=null,period=null;
@@ -14,7 +14,7 @@ export function mountGoals(service){
   const editFields=el('fieldset');
   function build(){
     panel=el('section',null,{className:'tcard',hidden:true});panel.id='goalsPanel';
-    panel.append(title,scope,el('p','Este resumo usa o mês selecionado abaixo e somente dias completos. Os filtros dos demais gráficos não alteram esta visão.',{className:'attr-note'}),month,refresh,status,summary);
+    panel.append(title,scope,el('p','Realizado do mês selecionado: mês atual até hoje, mês passado completo. Hoje é parcial e o GA4 pode atualizar os valores depois. Os filtros dos demais gráficos não alteram esta visão.',{className:'attr-note'}),month,refresh,status,summary);
     const row=el('div',null,{className:'sgrid'});
     for(const key of fields){const label=el('label',labels[key]);controls[key]=input('number');controls[key].min='0';controls[key].step=key==='orders'?'1':'any';controls[key].style.cssText='width:100%;padding:9px;margin-top:6px';label.append(controls[key]);row.append(label);}
     editFields.style.cssText='border:0;border-top:1px solid var(--border);margin-top:18px;padding-top:16px';
@@ -34,20 +34,28 @@ export function mountGoals(service){
   }
   async function report(range){
     const target=p;
-    const metrics=[{name:'purchaseRevenue'},{name:'ecommercePurchases'}];if(target.costCoverage)metrics.push({name:'advertiserAdCost'});
-    const r=await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${target.id}:runReport`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({dateRanges:[range],metrics})});
+    const accessToken=token;
+    async function query(names){
+    const r=await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${target.id}:runReport`,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({dateRanges:[range],metrics:names.map(name=>({name}))})});
     const json=await r.json();if(!r.ok)throw new Error(json.error?.message||'Erro ao consultar GA4.');
-    const vals=json.rows?.[0]?.metricValues?.map(v=>Number(v.value))||[0,0,0];
-    return {revenue:vals[0],orders:vals[1],budget:target.costCoverage?vals[2]:null,roas:target.costCoverage&&vals[2]>0?vals[0]/vals[2]:null,cpa:target.costCoverage&&vals[1]>0?vals[2]/vals[1]:null};
+    return json.rows?.[0]?.metricValues?.map(v=>Number(v.value))||names.map(()=>0);
+    }
+    const [base,cost]=await Promise.allSettled([query(['purchaseRevenue','ecommercePurchases']),query(['advertiserAdCost'])]);
+    if(base.status==='rejected')throw base.reason;
+    return {...monthlyActual(base.value[0],base.value[1],cost.status==='fulfilled'?cost.value[0]:null),costError:cost.status==='rejected'?cost.reason.message:null};
   }
   function format(v,key){if(v==null)return 'Indisponível';if(key==='roas')return v.toFixed(2)+'x';if(key==='orders')return new Intl.NumberFormat('pt-BR').format(v);return new Intl.NumberFormat('pt-BR',{style:'currency',currency:p.currency}).format(v);}
   function render(){
     summary.replaceChildren();
-    const table=el('table'),head=el('tr'),thead=el('thead'),tbody=el('tbody');['Indicador','Realizado','Meta do mês','Atingimento / limite','Desvio da meta','Período anterior equivalente'].forEach(x=>head.append(el('th',x)));thead.append(head);table.append(thead,tbody);
-    fields.forEach(key=>{const v=actual?.[key],target=goal?.[key],a=assessment(v,target,['budget','cpa'].includes(key));const tr=el('tr');[labels[key],format(v,key),target==null?'Não definida':format(target,key),a.ratio==null?a.label:(100*a.ratio).toFixed(1)+'% — '+a.label,v==null||target==null?'—':format(v-target,key),format(previous?.[key],key)].forEach(x=>tr.append(el('td',x)));tbody.append(tr);});
+    const table=el('table'),head=el('tr'),thead=el('thead'),tbody=el('tbody');['Indicador','Realizado no mês','Meta do mês','Atingimento / limite mensal','Esperado até a data','Desvio vs. esperado','Período anterior equivalente'].forEach(x=>head.append(el('th',x)));thead.append(head);table.append(thead,tbody);
+    fields.forEach(key=>{const v=actual?.[key],target=goal?.[key],partial=['budget','roas','cpa'].includes(key)&&!p.costCoverage,a=assessment(v,target,['budget','cpa'].includes(key)),pace=pacing(v,target,key,period);const tr=el('tr');[labels[key],format(v,key)+(partial&&v!=null?' (cobertura não validada)':''),target==null?'Não definida':format(target,key),partial?'Sem avaliação: validar custos':a.ratio==null?a.label:(100*a.ratio).toFixed(1)+'% — '+a.label,pace.expected==null?'—':format(pace.expected,key),pace.deviation==null?'—':format(pace.deviation,key)+(partial?' (provisório)':''),format(previous?.[key],key)].forEach(x=>tr.append(el('td',x)));tbody.append(tr);});
     const wrap=el('div',null,{className:'twrap'});wrap.append(table);summary.append(wrap);
-    if(!p.costCoverage)summary.append(el('p','Custo completo não confirmado para esta propriedade: orçamento realizado, ROAS e CPA ficam indisponíveis neste resumo.',{className:'attr-note'}));
-    if(period?.elapsed&&actual){summary.append(el('p',`Estimativa linear de receita ao fechar o mês: ${format(actual.revenue/period.elapsed*period.days,'revenue')}. Base: ${period.elapsed} dias completos; não considera sazonalidade.`,{className:'attr-note'}));}
+    summary.append(el('p','Fonte do gasto: advertiserAdCost do GA4, consultado no mesmo período da receita e dos pedidos. ROAS deste resumo = receita total de compras ÷ gasto disponível; CPA = gasto disponível ÷ compras. Não são métricas atribuídas a uma campanha.',{className:'attr-note'}));
+    if(!p.costCoverage)summary.append(el('p','Cobertura de custos não validada: exibimos o gasto que chega ao GA4, mas podem faltar canais (por exemplo, Meta). ROAS e CPA são indicativos e não recebem avaliação de meta até a conferência. Marcar a cobertura na Administração não importa custos ausentes.',{className:'attr-note'}));
+    if(actual?.costError)summary.append(el('p','Falha ao consultar custo: '+actual.costError,{className:'attr-note'}));
+    else if(actual?.budget===0)summary.append(el('p','O GA4 retornou custo zero neste período; confira as integrações/importações. Zero retornado não comprova ausência de investimento. ROAS não pode ser calculado sem custo positivo.',{className:'attr-note'}));
+    summary.append(el('p','Esperado = meta mensal × dias considerados ÷ dias do mês para receita, gasto e pedidos. ROAS e CPA mantêm seus limites sem rateio. Desvio = realizado − esperado; gasto acima do ritmo não significa necessariamente eficiência pior.',{className:'attr-note'}));
+    if(period?.elapsed&&actual){summary.append(el('p',`Estimativa linear de receita ao fechar o mês: ${format(actual.revenue/period.elapsed*period.days,'revenue')}. Base: ${period.elapsed} dias considerados, incluindo hoje se mês atual; valor provisório, sem sazonalidade.`,{className:'attr-note'}));}
     if(goal?.revenue!=null&&goal?.budget>0&&goal?.roas!=null&&Math.abs(goal.revenue/goal.budget-goal.roas)>.01)summary.append(el('p','A receita dividida pelo orçamento difere do ROAS mínimo. Verifique se essa diferença é intencional.',{className:'attr-note'}));
   }
   async function load(){
@@ -71,7 +79,7 @@ export function mountGoals(service){
       actual=result[1].status==='fulfilled'?result[1].value:null;previous=result[2].status==='fulfilled'?result[2].value:null;
       editFields.disabled=!['manager','admin'].includes(p.role);
       save.disabled=false;
-      status.textContent=`${p.currency} · ${p.timeZone} · ${period.elapsed?'Resultados até '+period.endDate:'Sem dias completos no mês'} · ${p.role==='viewer'?'Somente leitura':'Edição autorizada'}`;
+      status.textContent=`${p.currency} · ${p.timeZone} · ${period.elapsed?'Resultados de '+period.startDate+' até '+period.endDate:'Mês futuro: sem realizado'} · ${p.role==='viewer'?'Somente leitura':'Edição autorizada'}`;
       if(result[1].status==='rejected')status.textContent+=' · Resultado GA4 indisponível: '+result[1].reason.message;
       if(result[2].status==='rejected')status.textContent+=' · Comparação indisponível.';
       history.append(el('summary','Histórico de alterações'));

@@ -83,7 +83,7 @@ Autorização da aplicação e permissão de leitura no GA4 são verificações 
 - [ ] Histórico de alterações e proteção contra sobrescrita simultânea.
 - [ ] Resumo: realizado, meta, percentual atingido, desvio absoluto, comparação anterior e data da atualização.
 - [ ] Orçamento realizado e ritmo de gasto; não avaliar cobertura incompleta como orçamento total consumido.
-- [ ] Comparar mês até ontem com igual número de dias do mês anterior; dias incompletos sinalizados.
+- [x] Comparar mês atual até hoje com igual número de dias do mês anterior; hoje parcial sinalizado. Ajustado por solicitação do gestor: esperado proporcional e desvio até a data, sem ratear ROAS/CPA. Meses anteriores completos.
 - [ ] Para vários meses, somar metas monetárias e de pedidos; não somar ROAS/CPA. Para períodos parciais, apresentar rateio por dias explicitamente ou não comparar até definir a regra.
 - [ ] Projeção mensal simples baseada em dias completos, apresentada como estimativa, sem garantia.
 - [ ] Regras no banco impedem leitura/escrita entre clientes e edição por visualizador, mesmo por requisição direta.
