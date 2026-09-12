@@ -237,6 +237,12 @@ tbody td:first-child{color:var(--text);font-weight:500}
 .farrow-badge.red{background:rgba(239,68,68,.1);color:#ef4444}
 .farrow-badge.yellow{background:rgba(245,158,11,.1);color:#f59e0b}
 .farrow-badge.green{background:rgba(16,185,129,.1);color:#10b981}
+.attr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:22px}
+.attr-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);min-width:0}
+.attr-card.full{grid-column:1/-1}
+.attr-note{font-size:.72rem;color:var(--text3);line-height:1.5;margin:8px 0 2px}
+.attr-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:10px;background:rgba(79,70,229,.1);color:#6366f1;font-size:.66rem;font-weight:700}
+@media(max-width:900px){.attr-grid{grid-template-columns:1fr}.attr-card.full{grid-column:auto}}
 .roas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;padding:4px 0}
 .roas-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;transition:all .2s}
 .roas-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
@@ -510,8 +516,30 @@ Selecione a Propriedade</div>
 
 <!-- Funil -->
 <div class="funnelcard" id="funnelCard" style="display:none">
-  <div class="chead"><div><div class="ctitle">🔻 Funil de Conversão</div><div class="csub">Jornada do usuário até a compra</div></div></div>
+  <div class="chead"><div><div class="ctitle">🔻 Funil sequencial de usuários</div><div class="csub">Funil fechado; cada etapa pode ser seguida indiretamente</div></div><span class="attr-badge">Data API Funnel</span></div>
   <div class="funnel-wrap" id="funnelWrap"><div style="text-align:center;padding:40px;color:var(--text3)">Aguardando dados...</div></div>
+</div>
+
+<!-- Atribuição auxiliar capturada pelo GTM -->
+<div class="attr-grid" id="attributionCard" style="display:none">
+  <div class="attr-card">
+    <div class="chead"><div><div class="ctitle">First Touch capturado</div><div class="csub">Origem que iniciou o relacionamento rastreável</div></div></div>
+    <div class="attr-note">Usa <b>attr_first_*</b>. É uma visão auxiliar do GTM e não substitui a atribuição nativa do GA4.</div>
+    <div class="twrap"><table><thead><tr><th>Origem / mídia</th><th>Campanha</th><th>Compras</th><th>Receita</th></tr></thead><tbody id="attrFirstBody"></tbody></table></div>
+  </div>
+  <div class="attr-card">
+    <div class="chead"><div><div class="ctitle">Last Non-Direct capturado</div><div class="csub">Último toque não direto persistido</div></div></div>
+    <div class="attr-note">Usa <b>attr_last_*</b> e ajuda a auditar perdas durante a navegação.</div>
+    <div class="twrap"><table><thead><tr><th>Origem / mídia</th><th>Campanha</th><th>Compras</th><th>Receita</th></tr></thead><tbody id="attrLastBody"></tbody></table></div>
+  </div>
+  <div class="attr-card full">
+    <div class="chead"><div><div class="ctitle">Auditoria: atribuição nativa × auxiliar</div><div class="csub">Compara a sessão reconhecida pelo GA4 com o Last Non-Direct persistido</div></div></div>
+    <div class="twrap"><table><thead><tr><th>GA4 sessão</th><th>Auxiliar last touch</th><th>Campanha auxiliar</th><th>Compras</th><th>Receita</th></tr></thead><tbody id="attrAuditBody"></tbody></table></div>
+  </div>
+  <div class="attr-card full">
+    <div class="chead"><div><div class="ctitle">Matriz First × Last</div><div class="csub">Quais origens iniciam e quais fecham as jornadas rastreáveis</div></div></div>
+    <div class="twrap"><table><thead><tr><th>First touch</th><th>Last touch</th><th>Compras</th><th>Receita</th></tr></thead><tbody id="attrMatrixBody"></tbody></table></div>
+  </div>
 </div>
 
 <!-- Tabela -->
@@ -542,7 +570,7 @@ const G={
   tokenRenewing:false,     // CORREÇÃO 1: flag de renovação em curso
   tokenRenewTimer:null,    // CORREÇÃO 1: timer de alerta antecipado
   propId:'',properties:[],theme:'dark',lineMode:'value',sortCol:2,sortAsc:false,
-  raw:{main:[],months:[],items:[],first:[],last:[],states:[]},
+  raw:{main:[],months:[],items:[],first:[],last:[],states:[],funnel:[],attrFirst:[],attrLast:[],attrAudit:[],attrMatrix:[]},
   filtered:null,tokenClient:null,gsiReady:false,
   // CORREÇÃO 3: chaves separadas por gráfico
   compKeysLine:[],compKeysRoas:[],compKeysCost:[],
@@ -600,11 +628,11 @@ function hideSkeletonKPIs(){
 }
 
 function showDashboard(){
-  ['filterCard','kpiGrid','chartsGrid','funnelCard','tableCard','insightCard'].forEach(function(id){var el=$(id);if(el)el.style.display='';});
+  ['filterCard','kpiGrid','chartsGrid','funnelCard','attributionCard','tableCard','insightCard'].forEach(function(id){var el=$(id);if(el)el.style.display='';});
   $('btnRef').style.display='';$('btnLogout').style.display='';$('userBadge').style.display='';
 }
 function hideDashboard(){
-  ['filterCard','kpiGrid','chartsGrid','funnelCard','tableCard','insightCard'].forEach(function(id){var el=$(id);if(el)el.style.display='none';});
+  ['filterCard','kpiGrid','chartsGrid','funnelCard','attributionCard','tableCard','insightCard'].forEach(function(id){var el=$(id);if(el)el.style.display='none';});
   $('btnRef').style.display='none';$('btnLogout').style.display='none';$('userBadge').style.display='none';
   $('propSelectWrap').style.display='none';$('propSelectorCard').style.display='none';
   // ── CORREÇÃO 1: limpa timers ao ocultar ──
@@ -786,11 +814,11 @@ function refreshData(){
 
 function parseRep(rep){
   if(!rep||!rep.rows||!rep.dimensionHeaders)return[];
-  var dims=(rep.dimensionHeaders||[]).map(function(h){return norm(h.name);});
+  var dims=(rep.dimensionHeaders||[]).map(function(h){return norm(h.name).replace(/^customevent/,'');});
   var mets=(rep.metricHeaders||[]).map(function(h){return norm(h.name);});
   return(rep.rows||[]).map(function(row){
     var o={};
-    (row.dimensionValues||[]).forEach(function(v,i){o[dims[i]]=v.value==='(not set)'?'':(v.value||'');});
+    (row.dimensionValues||[]).forEach(function(v,i){o[dims[i]]=v.value||'';});
     (row.metricValues||[]).forEach(function(v,i){o[mets[i]]=safeN(v.value);});
     return o;
   });
@@ -828,6 +856,26 @@ async function ga4ReqSafe(body,timeoutMs){
     if(err.name==='AbortError')throw new Error('Timeout: requisição demorou mais de '+Math.round(timeoutMs/1000)+'s. Tente um período menor.');
     throw err;
   }
+}
+
+async function ga4FunnelReqSafe(body,timeoutMs){
+  timeoutMs=timeoutMs||20000;
+  var cacheKey='FUNNEL|'+JSON.stringify(body)+G.propId;
+  var now=Date.now();
+  if(CACHE[cacheKey]&&(now-CACHE[cacheKey].ts)<CACHE_TTL)return CACHE[cacheKey].data;
+  var controller=new AbortController();
+  var timer=setTimeout(function(){controller.abort();},timeoutMs);
+  try{
+    var r=await fetch('https://analyticsdata.googleapis.com/v1alpha/properties/'+G.propId+':runFunnelReport',{method:'POST',headers:{'Authorization':'Bearer '+G.token,'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal});
+    clearTimeout(timer);
+    if(!r.ok){var e=await r.json().catch(function(){return{};});throw new Error((e&&e.error&&e.error.message)||'HTTP '+r.status);}
+    var data=await r.json();CACHE[cacheKey]={ts:now,data:data};return data;
+  }catch(err){clearTimeout(timer);if(err.name==='AbortError')throw new Error('Timeout no funil sequencial.');throw err;}
+}
+
+function funnelBody(dr){
+  var names=['page_view','view_item','add_to_cart','begin_checkout','add_shipping_info','add_payment_info','purchase'];
+  return {dateRanges:[dr],funnel:{isOpenFunnel:false,steps:names.map(function(name){return{name:name,isDirectlyFollowedBy:false,filterExpression:{funnelEventFilter:{eventName:name}}};})},limit:'50'};
 }
 
 // ── CORREÇÃO 5: rastreia erros parciais ──
@@ -891,15 +939,26 @@ async function fetchAll(){
       ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],limit:500},tmo).catch(function(e){console.warn('last:',e.message);_partialErrors.push('Last click indisponível.');return null;}),
       ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'region'}],metrics:[{name:'purchaseRevenue'},{name:'sessions'},{name:'ecommercePurchases'}],limit:200},tmo).catch(function(e){console.warn('states:',e.message);return null;}),
       ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionDefaultChannelGrouping'}],metrics:[{name:'sessions'},{name:'engagedSessions'},{name:'averageSessionDuration'},{name:'screenPageViewsPerSession'},{name:'bounceRate'},{name:'newUsers'},{name:'activeUsers'}],limit:50},tmo).catch(function(e){console.warn('sess:',e.message);return null;}),
-      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'eventName'}],metrics:[{name:'eventCount'}],dimensionFilter:{filter:{fieldName:'eventName',inListFilter:{values:['page_view','view_item','add_to_cart','begin_checkout','add_payment_info','purchase']}}},limit:20},tmo).catch(function(e){console.warn('funnel:',e.message);return null;})
+      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'eventName'}],metrics:[{name:'eventCount'}],dimensionFilter:{filter:{fieldName:'eventName',inListFilter:{values:['page_view','view_item','add_to_cart','begin_checkout','add_shipping_info','add_payment_info','purchase']}}},limit:20},tmo).catch(function(e){console.warn('event volume:',e.message);return null;}),
+      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'customEvent:attr_first_source'},{name:'customEvent:attr_first_medium'},{name:'customEvent:attr_first_campaign'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:500},tmo).catch(function(e){console.warn('attr first:',e.message);_partialErrors.push('First Touch auxiliar ainda indisponível; dimensões novas podem levar 24–48h.');return null;}),
+      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'customEvent:attr_last_source'},{name:'customEvent:attr_last_medium'},{name:'customEvent:attr_last_campaign'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:500},tmo).catch(function(e){console.warn('attr last:',e.message);return null;}),
+      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'customEvent:attr_last_source'},{name:'customEvent:attr_last_medium'},{name:'customEvent:attr_last_campaign'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:1000},tmo).catch(function(e){console.warn('attr audit:',e.message);return null;}),
+      ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'customEvent:attr_first_source'},{name:'customEvent:attr_last_source'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:500},tmo).catch(function(e){console.warn('attr matrix:',e.message);return null;}),
+      ga4FunnelReqSafe(funnelBody(dr),tmo).catch(function(e){console.warn('sequential funnel:',e.message);_partialErrors.push('Funil sequencial indisponível; exibindo volume de eventos como contingência.');return null;})
     ]);
     G.raw.items=res[0]?parseRep(res[0]):[];
     G.raw.first=res[1]?parseRep(res[1]):[];
     G.raw.last=res[2]?parseRep(res[2]):[];
     G.raw.states=res[3]?parseRep(res[3]):[];
     G.raw.sessData=res[4]?parseRep(res[4]):[];
-    G.raw.funnel=res[5]?parseRep(res[5]):[];
-    console.log('✅ sessData:'+G.raw.sessData.length+' funnel:'+G.raw.funnel.length);
+    G.raw.eventVolume=res[5]?parseRep(res[5]):[];
+    G.raw.attrFirst=res[6]?parseRep(res[6]):[];
+    G.raw.attrLast=res[7]?parseRep(res[7]):[];
+    G.raw.attrAudit=res[8]?parseRep(res[8]):[];
+    G.raw.attrMatrix=res[9]?parseRep(res[9]):[];
+    G.raw.funnel=res[10]&&res[10].funnelTable?parseRep(res[10].funnelTable):G.raw.eventVolume;
+    G.raw.funnelIsSequential=!!(res[10]&&res[10].funnelTable);
+    console.log('✅ sessData:'+G.raw.sessData.length+' funnel:'+G.raw.funnel.length+' atribuição:'+G.raw.attrAudit.length);
 
     setLoad(true,'Buscando custos de mídia...');
     var custoOk = false;
@@ -1074,7 +1133,7 @@ function onCompCustomDate(){
 
 function applyFilters(){
   if(!G.raw.main.length)return;
-  G.filtered={main:G.raw.main,months:G.raw.months,monthsComp:G.raw.monthsComp||[],first:G.raw.first,last:G.raw.last,items:G.raw.items,states:G.raw.states,sessData:G.raw.sessData||[],funnel:G.raw.funnel||[]};
+  G.filtered={main:G.raw.main,months:G.raw.months,monthsComp:G.raw.monthsComp||[],first:G.raw.first,last:G.raw.last,items:G.raw.items,states:G.raw.states,sessData:G.raw.sessData||[],funnel:G.raw.funnel||[],attrFirst:G.raw.attrFirst||[],attrLast:G.raw.attrLast||[],attrAudit:G.raw.attrAudit||[],attrMatrix:G.raw.attrMatrix||[]};
   renderAll(G.filtered);
 }
 
@@ -1095,6 +1154,7 @@ function renderAll(d){
   renderTable(d.main);
   renderSessions(d.sessData);
   renderFunnel(d.funnel);
+  renderAttribution(d);
   renderSessFirst(d.first);
   renderSessLast(d.last);
   renderInsights(d);
@@ -1114,10 +1174,10 @@ function renderKPIs(data){
   var conv=sess>0?(pur/sess)*100:0;
   var cac=pur>0&&cost>0?cost/pur:0;
 
-  // Abandono de carrinho: vem do funil (G.raw.funnel)
+  // Abandono de carrinho usa volume bruto de eventos; não mistura essa conta com o funil sequencial de usuários.
   var addToCart=0,purchases=pur;
-  if(G.raw.funnel){
-    G.raw.funnel.forEach(function(r){
+  if(G.raw.eventVolume){
+    G.raw.eventVolume.forEach(function(r){
       if((r.eventname||'').toLowerCase()==='add_to_cart')addToCart=safeN(r.eventcount||0);
     });
   }
@@ -1581,17 +1641,25 @@ function renderFunnel(data){
     {key:'view_item',label:'🛍️ View Item',color:'#7c3aed'},
     {key:'add_to_cart',label:'🛒 Add to Cart',color:'#3b82f6'},
     {key:'begin_checkout',label:'💳 Begin Checkout',color:'#f59e0b'},
+    {key:'add_shipping_info',label:'🚚 Add Shipping',color:'#eab308'},
     {key:'add_payment_info',label:'💰 Add Payment',color:'#f97316'},
     {key:'purchase',label:'✅ Purchase',color:'#10b981'}
   ];
   var evMap={};
-  data.forEach(function(r){var ev=r.eventname||r.event_name||'';if(ev)evMap[ev]=safeN(r.eventcount||0);});
+  if(G.raw.funnelIsSequential){
+    data.forEach(function(r){
+      var step=(r.funnelstepname||'').replace(/^\d+\.\s*/, '').trim();
+      if(step)evMap[step]=safeN(r.activeusers||0);
+    });
+  }else{
+    data.forEach(function(r){var ev=r.eventname||r.event_name||'';if(ev)evMap[ev]=safeN(r.eventcount||0);});
+  }
   var steps=STEPS.map(function(s){return{label:s.label,color:s.color,val:evMap[s.key]||0};});
   var maxVal=Math.max.apply(null,steps.map(function(s){return s.val;}))||1;
   var html='<div style="display:flex;gap:10px;padding:6px 12px;border-bottom:2px solid var(--border);margin-bottom:4px">'
     +'<div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);min-width:140px;flex-shrink:0">Etapa</div>'
     +'<div style="flex:1;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Volume</div>'
-    +'<div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);min-width:70px;text-align:right;flex-shrink:0">Eventos</div>'
+    +'<div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);min-width:70px;text-align:right;flex-shrink:0">'+(G.raw.funnelIsSequential?'Usuários':'Eventos')+'</div>'
     +'</div>';
   steps.forEach(function(s,i){
     var pctBar=maxVal>0?(s.val/maxVal)*100:0;
@@ -1602,6 +1670,24 @@ function renderFunnel(data){
     }
   });
   wrap.innerHTML=html;
+}
+
+function attrLabel(v,fallback){return v&&v!=='(not set)'?v:(v==='(not set)'?'(not set)':fallback||'(vazio)');}
+function renderAttrRows(bodyId,data,mode){
+  var body=$(bodyId);if(!body)return;
+  if(!data||!data.length){body.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3)">Sem dados pós-implantação neste período.</td></tr>';return;}
+  var rows=data.slice().sort(function(a,b){return safeN(b.purchaserevenue)-safeN(a.purchaserevenue);});
+  body.innerHTML=rows.map(function(r){
+    if(mode==='audit')return '<tr><td>'+attrLabel(r.sessionsource)+' / '+attrLabel(r.sessionmedium)+'</td><td>'+attrLabel(r.attrlastsource)+' / '+attrLabel(r.attrlastmedium)+'</td><td>'+attrLabel(r.attrlastcampaign)+'</td><td>'+num(r.ecommercepurchases)+'</td><td>'+brl(r.purchaserevenue)+'</td></tr>';
+    if(mode==='matrix')return '<tr><td>'+attrLabel(r.attrfirstsource)+'</td><td>'+attrLabel(r.attrlastsource)+'</td><td>'+num(r.ecommercepurchases)+'</td><td>'+brl(r.purchaserevenue)+'</td></tr>';
+    var p=mode==='first'?'attrfirst':'attrlast';return '<tr><td>'+attrLabel(r[p+'source'])+' / '+attrLabel(r[p+'medium'])+'</td><td>'+attrLabel(r[p+'campaign'])+'</td><td>'+num(r.ecommercepurchases)+'</td><td>'+brl(r.purchaserevenue)+'</td></tr>';
+  }).join('');
+}
+function renderAttribution(d){
+  renderAttrRows('attrFirstBody',d.attrFirst,'first');
+  renderAttrRows('attrLastBody',d.attrLast,'last');
+  renderAttrRows('attrAuditBody',d.attrAudit,'audit');
+  renderAttrRows('attrMatrixBody',d.attrMatrix,'matrix');
 }
 
 function renderSessFirst(data){
