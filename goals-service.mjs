@@ -44,7 +44,7 @@ export function createService(app) {
       });
     },
     async listClients(){if(!isAdmin)throw new Error('Acesso restrito.');return (await getDocs(collection(db,'clients'))).docs.map(d=>({id:d.id,...d.data()}));},
-    async configure({clientId,name,active,plan,propertyId,propertyName,currency,timeZone,email,role,memberActive,costCoverage}){
+    async configure({clientId,name,active,plan,propertyId,propertyName,currency,timeZone,email,role,memberActive}){
       if(!isAdmin)throw new Error('Acesso restrito.');
       email=email.trim().toLowerCase();
       if(!/^[a-zA-Z0-9_-]+$/.test(clientId)||!/^\d+$/.test(propertyId))throw new Error('IDs inválidos.');
@@ -53,7 +53,7 @@ export function createService(app) {
       if(!/^[A-Z]{3}$/.test(currency))throw new Error('Moeda inválida.');
       const batch=writeBatch(db);
       batch.set(doc(db,'clients',clientId),{name,active,plan},{merge:true});
-      batch.set(doc(db,'clients',clientId,'properties',propertyId),{nome:propertyName,currency,timeZone,configConfirmed:true,active:true,costCoverage:!!costCoverage},{merge:true});
+      batch.set(doc(db,'clients',clientId,'properties',propertyId),{nome:propertyName,currency,timeZone,configConfirmed:true,active:true},{merge:true});
       batch.set(doc(db,'clients',clientId,'members',email),{role,active:memberActive});
       batch.set(doc(db,'users',email),{active:true,clientIds:arrayUnion(clientId)},{merge:true});
       await batch.commit();

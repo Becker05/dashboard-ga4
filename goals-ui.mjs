@@ -46,19 +46,28 @@ export function mountGoals(service){
     const costValue=cost.status==='fulfilled'?cost.value.reduce((sum,row)=>sum+Number(row.metricValues?.[0]?.value||0),0):null;
     return {...monthlyActual(baseValues[0],baseValues[1],costValue),costError:cost.status==='rejected'?cost.reason.message:null};
   }
-  function format(v,key){if(v==null)return 'Indisponível';if(key==='roas')return v.toFixed(2)+'x';if(key==='orders')return new Intl.NumberFormat('pt-BR').format(v);return new Intl.NumberFormat('pt-BR',{style:'currency',currency:p.currency}).format(v);}
+  function format(v,key){if(v==null)return 'Indisponível';if(key==='roas')return v.toFixed(2)+'x';if(key==='orders')return new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}).format(v);return new Intl.NumberFormat('pt-BR',{style:'currency',currency:p.currency}).format(v);}
+  function direction(key,current,reference){
+    if(current==null||reference==null)return {className:'rn',arrow:'',change:null};
+    const diff=current-reference,inverse=['budget','cpa'].includes(key),good=Math.abs(diff)<1e-9||(!inverse&&diff>0)||(inverse&&diff<0);
+    return {className:Math.abs(diff)<1e-9?'rg':good?'rg':'rr',arrow:diff>0?'▲':diff<0?'▼':'●',change:reference!==0?Math.abs(diff/reference)*100:null};
+  }
   function render(){
     summary.replaceChildren();
     const table=el('table'),head=el('tr'),thead=el('thead'),tbody=el('tbody');['Indicador','Realizado no mês','Meta do mês','Atingimento / limite mensal','Esperado até a data','Desvio vs. esperado','Período anterior equivalente'].forEach(x=>head.append(el('th',x)));thead.append(head);table.append(thead,tbody);
-    fields.forEach(key=>{const v=actual?.[key],target=goal?.[key],partial=['budget','roas','cpa'].includes(key)&&!p.costCoverage,a=assessment(v,target,['budget','cpa'].includes(key)),pace=pacing(v,target,key,period);const tr=el('tr');[labels[key],format(v,key)+(partial&&v!=null?' (cobertura não validada)':''),target==null?'Não definida':format(target,key),partial?'Sem avaliação: validar custos':a.ratio==null?a.label:(100*a.ratio).toFixed(1)+'% — '+a.label,pace.expected==null?'—':format(pace.expected,key),pace.deviation==null?'—':format(pace.deviation,key)+(partial?' (provisório)':''),format(previous?.[key],key)].forEach(x=>tr.append(el('td',x)));tbody.append(tr);});
+    fields.forEach(key=>{
+      const v=actual?.[key],target=goal?.[key],a=assessment(v,target,['budget','cpa'].includes(key)),pace=pacing(v,target,key,period),tr=el('tr');
+      [labels[key],format(v,key),target==null?'Não definida':format(target,key),a.ratio==null?a.label:(100*a.ratio).toFixed(1)+'% — '+a.label,pace.expected==null?'—':format(pace.expected,key)].forEach(x=>tr.append(el('td',x)));
+      const deviation=direction(key,v,pace.expected),devCell=el('td',pace.deviation==null?'—':`${deviation.arrow} ${format(Math.abs(pace.deviation),key)}`,{className:deviation.className});tr.append(devCell);
+      const prior=previous?.[key],trend=direction(key,v,prior),priorText=prior==null?'Indisponível':`${format(prior,key)} · ${trend.arrow}${trend.change==null?'':` ${trend.change.toFixed(1)}%`}`;tr.append(el('td',priorText,{className:trend.className}));
+      tbody.append(tr);
+    });
     const wrap=el('div',null,{className:'twrap'});wrap.append(table);summary.append(wrap);
     summary.append(el('p','Fonte do gasto: advertiserAdCost do GA4, consultado no mesmo período da receita e dos pedidos. ROAS deste resumo = receita total de compras ÷ gasto disponível; CPA = gasto disponível ÷ compras. Não são métricas atribuídas a uma campanha.',{className:'attr-note'}));
-    if(!p.costCoverage)summary.append(el('p','Cobertura de custos não validada: exibimos o gasto que chega ao GA4, mas podem faltar canais (por exemplo, Meta). ROAS e CPA são indicativos e não recebem avaliação de meta até a conferência. Marcar a cobertura na Administração não importa custos ausentes.',{className:'attr-note'}));
     if(actual?.costError)summary.append(el('p','Falha ao consultar custo: '+actual.costError,{className:'attr-note'}));
     else if(actual?.budget===0)summary.append(el('p','O GA4 retornou custo zero neste período; confira as integrações/importações. Zero retornado não comprova ausência de investimento. ROAS não pode ser calculado sem custo positivo.',{className:'attr-note'}));
     summary.append(el('p','Esperado = meta mensal × dias considerados ÷ dias do mês para receita, gasto e pedidos. ROAS e CPA mantêm seus limites sem rateio. Desvio = realizado − esperado; gasto acima do ritmo não significa necessariamente eficiência pior.',{className:'attr-note'}));
     if(period?.elapsed&&actual){summary.append(el('p',`Estimativa linear de receita ao fechar o mês: ${format(actual.revenue/period.elapsed*period.days,'revenue')}. Base: ${period.elapsed} dias considerados, incluindo hoje se mês atual; valor provisório, sem sazonalidade.`,{className:'attr-note'}));}
-    if(goal?.revenue!=null&&goal?.budget>0&&goal?.roas!=null&&Math.abs(goal.revenue/goal.budget-goal.roas)>.01)summary.append(el('p','A receita dividida pelo orçamento difere do ROAS mínimo. Verifique se essa diferença é intencional.',{className:'attr-note'}));
   }
   async function load(){
     const run=++generation;version=0;goal=actual=previous=null;history.replaceChildren();fields.forEach(f=>controls[f].value='');summary.replaceChildren();editFields.disabled=true;status.textContent='Carregando metas e resultados…';
@@ -103,7 +112,7 @@ export function mountGoals(service){
     const grid=el('div',null,{className:'sgrid'});
     Object.entries(defs).forEach(([k,label])=>{const l=el('label',label);inputs[k]=input(k==='email'?'email':'text');inputs[k].required=true;inputs[k].style.cssText='width:100%;padding:8px';l.append(inputs[k]);grid.append(l);});
     inputs.role=el('select');inputs.role.append(el('option','Visualizador',{value:'viewer'}),el('option','Gestor — edita metas',{value:'manager'}));grid.append(inputs.role);
-    for(const [k,text] of [['active','Cliente ativo'],['memberActive','Usuário ativo neste cliente'],['costCoverage','Custo GA4 completo confirmado para esta propriedade']]){inputs[k]=input('checkbox');inputs[k].checked=k!=='costCoverage';const label=el('label',text);label.prepend(inputs[k]);grid.append(label);}
+    for(const [k,text] of [['active','Cliente ativo'],['memberActive','Usuário ativo neste cliente']]){inputs[k]=input('checkbox');inputs[k].checked=true;const label=el('label',text);label.prepend(inputs[k]);grid.append(label);}
     const submit=el('button','Salvar cadastro',{type:'submit',className:'btn'});f.append(grid,submit);f.onsubmit=async e=>{e.preventDefault();submit.disabled=true;try{const d={};Object.entries(inputs).forEach(([k,i])=>d[k]=i.type==='checkbox'?i.checked:i.value.trim());await service.configure(d);message.textContent='Cadastro salvo. Entre novamente para atualizar a lista de propriedades.';}catch(e){message.textContent=e.message;}finally{submit.disabled=false;}};
     box.append(note,select,f,message);document.querySelector('.app').append(box);
   }

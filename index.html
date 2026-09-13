@@ -398,6 +398,7 @@ Selecione a Propriedade</div>
     </div>
     <div class="fgrp" id="fCompCusW" style="display:none"><div class="fgl">Comparar com</div><div class="drange"><input class="di" type="date" id="fCDS"/><span style="font-size:.68rem;color:var(--text3)">até</span><input class="di" type="date" id="fCDE" onchange="onCompCustomDate()"/></div></div>
   </div>
+  <div class="attr-note" id="reportScope" style="margin-top:10px">Relatório principal: aguardando período.</div>
 </div>
 
 <!-- KPIs -->
@@ -476,30 +477,26 @@ Selecione a Propriedade</div>
   <div class="ccard c12"><div class="chead"><div><div class="ctitle">Investimento Diário</div><div class="csub" id="costLineSubtitle">Evolução temporal do custo de mídia</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cCostLine" height="90"></canvas><div class="empty" id="eCostLine" style="display:none"><div class="eico">📊</div><div class="ettl">Sem dados de investimento no período</div></div></div>
   <div class="ccard c12"><div class="chead"><div><div class="ctitle">ROAS Diário</div><div class="csub" id="roasLineSubtitle">Evolução temporal do ROAS</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cRoasLine" height="90"></canvas><div class="empty" id="eRoasLine" style="display:none"><div class="eico">📊</div><div class="ettl">Sem dados de custo para calcular ROAS</div></div></div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Canal</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutChan" height="180"></canvas><div class="empty" id="eDonutChan" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegChan" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
-  <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Origem</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonut" height="180"></canvas><div class="empty" id="eDonut" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLeg" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
-  <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Mídia</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutMed" height="180"></canvas><div class="empty" id="eDonutMed" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegMed" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
-  <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Campanha</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutCamp" height="180"></canvas><div class="empty" id="eDonutCamp" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegCamp" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Estado</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutSt" height="180"></canvas><div class="empty" id="eDonutSt" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegSt" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
   <div class="ccard c4"><div class="chead"><div><div class="ctitle">Por Categoria</div><div class="csub">% das vendas</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cDonutCat" height="180"></canvas><div class="empty" id="eDonutCat" style="display:none"><div class="eico">🍩</div><div class="ettl">Sem dados</div></div><div id="dLegCat" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div></div>
-  <div class="ccard c12"><div class="chead"><div><div class="ctitle">ROAS por Campanha</div><div class="csub">Campanhas com custo atribuído</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><div class="roas-grid" id="roasGrid"><div class="empty" id="eRoas" style="display:flex"><div class="eico">💸</div><div class="ettl">Sem custo atribuído</div></div></div></div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Aquisição do primeiro usuário</div><div class="csub">Primeiro toque do usuário</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cFirst" height="250"></canvas><div class="empty" id="eFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Aquisição da sessão</div><div class="csub">Campanha atribuída à sessão</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cLast" height="250"></canvas><div class="empty" id="eLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c12"><div class="chead"><div><div class="ctitle">ROAS por Campanha</div><div class="csub">GA4: receita de compra atribuída à sessão ÷ custo importado, no período principal</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><div class="roas-grid" id="roasGrid"><div class="empty" id="eRoas" style="display:flex"><div class="eico">💸</div><div class="ettl">Sem custo atribuído</div></div></div></div>
+  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Receita — aquisição do primeiro usuário</div><div class="csub">Campanha que adquiriu o usuário, escopo nativo do GA4</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cFirst" height="250"></canvas><div class="empty" id="eFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
+  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Receita — aquisição da sessão</div><div class="csub">Campanha atribuída à sessão, escopo nativo do GA4</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cLast" height="250"></canvas><div class="empty" id="eLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
   <!-- ── SESSÕES DENTRO DO CGRID (CORREÇÃO 6) ── -->
   <div class="ccard c12" id="sessCardInner">
     <div class="chead"><div><div class="ctitle">📊 Visão de Sessões</div><div class="csub">Comportamento do usuário no período</div></div><span class="drag-handle" title="Arrastar">⠿</span></div>
     <div class="sgrid">
       <div class="sitem"><div class="slbl">Total de Sessões</div><div class="sval" id="sSess">—</div></div>
+      <div class="sitem"><div class="slbl">Total de Usuários</div><div class="sval" id="sUsers">—</div></div>
+      <div class="sitem"><div class="slbl">Usuários Ativos</div><div class="sval" id="sActive">—</div></div>
+      <div class="sitem"><div class="slbl">Novos Usuários</div><div class="sval" id="sNew">—</div></div>
       <div class="sitem"><div class="slbl">Sessões Engajadas</div><div class="sval" id="sEng">—</div></div>
       <div class="sitem"><div class="slbl">Taxa de Engajamento</div><div class="sval" id="sEngR">—</div></div>
       <div class="sitem"><div class="slbl">Duração Média</div><div class="sval" id="sDur">—</div></div>
       <div class="sitem"><div class="slbl">Páginas / Sessão</div><div class="sval" id="sPpS">—</div></div>
       <div class="sitem"><div class="slbl">Bounce Rate</div><div class="sval" id="sBnc">—</div></div>
-      <div class="sitem"><div class="slbl">Novos Usuários</div><div class="sval" id="sNew">—</div></div>
-      <div class="sitem"><div class="slbl">Ativos menos novos (estimativa)</div><div class="sval" id="sRet">—</div></div>
     </div>
   </div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — primeiro usuário</div><div class="csub">Campanhas que trouxeram mais sessões</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cSessFirst" height="250"></canvas><div class="empty" id="eSessFirst" style="display:none"><div class="eico">👆</div><div class="ettl">Sem dados</div></div></div>
-  <div class="ccard c6"><div class="chead"><div><div class="ctitle">Sessões — campanha da sessão</div><div class="csub">Campanhas atribuídas às sessões</div></div><span class="drag-handle" title="Arrastar">⠿</span></div><canvas id="cSessLast" height="250"></canvas><div class="empty" id="eSessLast" style="display:none"><div class="eico">🏁</div><div class="ettl">Sem dados</div></div></div>
 </div>
 
 <!-- Funil -->
@@ -824,6 +821,15 @@ function parseRep(rep){
   });
 }
 
+function readableDimension(value){
+  var text=String(value==null?'':value);
+  try{text=decodeURIComponent(text.replace(/\+/g,'%20'));}catch(e){}
+  return text.trim().replace(/\s+/g,' ')||'(vazio)';
+}
+function campaignKey(campaign,source,medium){
+  return [campaign,source,medium].map(function(value){return readableDimension(value).toLocaleLowerCase('pt-BR');}).join('||');
+}
+
 async function ga4ReqSafe(body,timeoutMs){
   const requestProperty=G.propId,requestToken=G.token;
   timeoutMs=timeoutMs||15000;
@@ -885,7 +891,7 @@ async function ga4FunnelReqSafe(body,timeoutMs){
 }
 
 function funnelBody(dr){
-  var names=['add_to_cart','begin_checkout','add_shipping_info','add_payment_info','purchase'];
+  var names=['page_view','view_item','add_to_cart','begin_checkout','add_shipping_info','add_payment_info','purchase'];
   return {dateRanges:[dr],funnel:{isOpenFunnel:false,steps:names.map(function(name){return{name:name,isDirectlyFollowedBy:false,filterExpression:{funnelEventFilter:{eventName:name}}};})},limit:'50'};
 }
 
@@ -893,6 +899,24 @@ async function ga4OptionalReqSafe(body,timeoutMs){
   const required=(body.dimensions||[]).map(d=>d.name).filter(n=>n.startsWith('customEvent:'));
   if(G.availableDimensions && required.some(n=>!G.availableDimensions.has(n)))return null;
   return ga4ReqSafe(body,timeoutMs);
+}
+
+async function fetchHistory(dr,useDia,timeoutMs){
+  var dateDimension=useDia?'date':'yearMonth';
+  var revenue=parseRep(await ga4ReqSafe({dateRanges:[dr],dimensions:[{name:dateDimension}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],orderBys:[{dimension:{dimensionName:dateDimension}}],limit:500},timeoutMs));
+  var costRows=[],costMetric='';
+  for(const metric of ['advertiserAdCost','manualAdCost']){
+    try{
+      costRows=parseRep(await ga4ReqSafe({dateRanges:[dr],dimensions:[{name:dateDimension},{name:'sessionCampaignName'}],metrics:[{name:metric}],orderBys:[{dimension:{dimensionName:dateDimension}}],limit:5000},timeoutMs));
+      if(costRows.some(function(row){return safeN(row[norm(metric)])>0;})){costMetric=norm(metric);break;}
+    }catch(e){console.warn('Histórico de '+metric+': '+e.message);}
+  }
+  var costByDate={};
+  costRows.forEach(function(row){var key=row[norm(dateDimension)];costByDate[key]=(costByDate[key]||0)+safeN(row[costMetric]||0);});
+  var seen={};
+  revenue.forEach(function(row){var key=row[norm(dateDimension)];row.advertiseradcost=costByDate[key]||0;seen[key]=true;});
+  Object.keys(costByDate).forEach(function(key){if(!seen[key]){var row={purchaserevenue:0,ecommercepurchases:0,sessions:0,advertiseradcost:costByDate[key]};row[norm(dateDimension)]=key;revenue.push(row);}});
+  return revenue;
 }
 
 // ── CORREÇÃO 5: rastreia erros parciais ──
@@ -907,23 +931,19 @@ async function fetchAll(){
   showSkeletonKPIs(); // CORREÇÃO 7
   try{
     var dr=getDR();var dias=getDias();var tmo=dias<=30?12000:dias<=90?20000:30000;
+    $('reportScope').textContent='Relatório principal: '+dr.startDate.split('-').reverse().join('/')+' a '+dr.endDate.split('-').reverse().join('/')+' · '+dias+' dia'+(dias===1?'':'s')+'. Metas permanecem mensais.';
     G.availableDimensions=null;
     try{const meta=await fetch('https://analyticsdata.googleapis.com/v1beta/properties/'+G.propId+'/metadata',{headers:{Authorization:'Bearer '+G.token}});if(meta.ok){const m=await meta.json();G.availableDimensions=new Set((m.dimensions||[]).map(d=>d.apiName));if(!G.availableDimensions.has('customEvent:attr_first_source'))_partialErrors.push('Atribuição auxiliar não configurada nesta propriedade. Relatórios nativos disponíveis.');}}catch(e){_partialErrors.push('Disponibilidade das dimensões não verificada.');}
     setLoad(true,'Buscando sessões e vendas...');
     var q1=await ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionSource'},{name:'sessionMedium'},{name:'sessionCampaignName'},{name:'sessionDefaultChannelGrouping'},{name:'region'}],metrics:[{name:'sessions'},{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'activeUsers'}],limit:5000},tmo);
     G.raw.main=parseRep(q1);
+    var qTotals=await ga4ReqSafe({dateRanges:[dr],metrics:[{name:'sessions'},{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'activeUsers'},{name:'totalUsers'},{name:'newUsers'}],limit:1},tmo);
+    G.raw.totals=parseRep(qTotals)[0]||null;
     console.log('✅ main: '+G.raw.main.length+' linhas');
 
     setLoad(true,'Buscando histórico...');
     var useDia=dias<61;
-    var q2=await ga4ReqSafe({
-      dateRanges:[dr],
-      dimensions:[{name:useDia?'date':'yearMonth'},{name:'sessionSource'}],
-      metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'},{name:'advertiserAdCost'}],
-      orderBys:[{dimension:{dimensionName:useDia?'date':'yearMonth'}}],
-      limit:500
-    },tmo);
-    G.raw.months=parseRep(q2);
+    G.raw.months=await fetchHistory(dr,useDia,tmo);
     G.raw.useDia=useDia;
     console.log('✅ histórico: '+G.raw.months.length+' linhas · modo:'+(useDia?'dia':'mês'));
 
@@ -933,14 +953,7 @@ async function fetchAll(){
     G.raw.funnelComp=[];
     if(compDr){
       try{
-        var q2c=await ga4ReqSafe({
-          dateRanges:[compDr],
-          dimensions:[{name:useDia?'date':'yearMonth'},{name:'sessionSource'}],
-          metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'},{name:'advertiserAdCost'}],
-          orderBys:[{dimension:{dimensionName:useDia?'date':'yearMonth'}}],
-          limit:500
-        },tmo);
-        G.raw.monthsComp=parseRep(q2c);
+        G.raw.monthsComp=await fetchHistory(compDr,useDia,tmo);
         console.log('✅ comparativo: '+G.raw.monthsComp.length+' linhas');
       }catch(ce){
         console.warn('⚠️ Comparativo:',ce.message);
@@ -959,7 +972,7 @@ async function fetchAll(){
       ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'firstUserCampaignName'},{name:'firstUserSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],limit:500},tmo).catch(function(e){console.warn('first user:',e.message);_partialErrors.push('Aquisição do primeiro usuário indisponível.');return null;}),
       ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],limit:500},tmo).catch(function(e){console.warn('session acquisition:',e.message);_partialErrors.push('Aquisição da sessão indisponível.');return null;}),
       ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'region'}],metrics:[{name:'purchaseRevenue'},{name:'sessions'},{name:'ecommercePurchases'}],limit:200},tmo).catch(function(e){console.warn('states:',e.message);return null;}),
-      ga4ReqSafe({dateRanges:[dr],metrics:[{name:'sessions'},{name:'engagedSessions'},{name:'averageSessionDuration'},{name:'screenPageViewsPerSession'},{name:'bounceRate'},{name:'newUsers'},{name:'activeUsers'}],limit:50},tmo).catch(function(e){console.warn('sess:',e.message);return null;}),
+      ga4ReqSafe({dateRanges:[dr],metrics:[{name:'sessions'},{name:'totalUsers'},{name:'engagedSessions'},{name:'averageSessionDuration'},{name:'screenPageViewsPerSession'},{name:'bounceRate'},{name:'newUsers'},{name:'activeUsers'}],limit:1},tmo).catch(function(e){console.warn('sess:',e.message);return null;}),
       ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'eventName'}],metrics:[{name:'eventCount'}],dimensionFilter:{filter:{fieldName:'eventName',inListFilter:{values:['page_view','view_item','add_to_cart','begin_checkout','add_shipping_info','add_payment_info','purchase']}}},limit:20},tmo).catch(function(e){console.warn('event volume:',e.message);return null;}),
       ga4OptionalReqSafe({dateRanges:[dr],dimensions:[{name:'customEvent:attr_first_source'},{name:'customEvent:attr_first_medium'},{name:'customEvent:attr_first_campaign'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:500},tmo).catch(function(e){console.warn('attr first:',e.message);_partialErrors.push('First Touch auxiliar ainda indisponível; dimensões novas podem levar 24–48h.');return null;}),
       ga4OptionalReqSafe({dateRanges:[dr],dimensions:[{name:'customEvent:attr_last_source'},{name:'customEvent:attr_last_medium'},{name:'customEvent:attr_last_campaign'}],metrics:[{name:'ecommercePurchases'},{name:'purchaseRevenue'}],dimensionFilter:{filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:'purchase'}}},limit:500},tmo).catch(function(e){console.warn('attr last:',e.message);return null;}),
@@ -985,6 +998,7 @@ async function fetchAll(){
 
     setLoad(true,'Buscando custos de mídia...');
     var custoOk = false;
+    G.raw.costTotal=null;
     try{
       var metricasCusto=['advertiserAdCost','manualAdCost'];
       var cd=[];var metricaUsada='';
@@ -1001,14 +1015,14 @@ async function fetchAll(){
         // ── CORREÇÃO 2: custo distribuído sem appliedKeys ──
         var costMap={};
         cd.forEach(function(c){
-          var k=(c.sessioncampaignname||'')+'||'+(c.sessionsource||'')+'||'+(c.sessionmedium||'');
-          if(!costMap[k])costMap[k]={cost:0};
+          var k=campaignKey(c.sessioncampaignname,c.sessionsource,c.sessionmedium);
+          if(!costMap[k])costMap[k]={cost:0,campaign:readableDimension(c.sessioncampaignname),source:readableDimension(c.sessionsource),medium:readableDimension(c.sessionmedium)};
           costMap[k].cost+=safeN(c[metricaUsada]||0);
         });
         // Aplica custo apenas na 1ª ocorrência da chave (evita duplicação na soma)
         var appliedKeys={};
         G.raw.main.forEach(function(r){
-          var k=(r.sessioncampaignname||'')+'||'+(r.sessionsource||'')+'||'+(r.sessionmedium||'');
+          var k=campaignKey(r.sessioncampaignname,r.sessionsource,r.sessionmedium);
           if(costMap[k]&&!appliedKeys[k]){
             r.advertiseradcost=costMap[k].cost;
             appliedKeys[k]=true;
@@ -1019,17 +1033,18 @@ async function fetchAll(){
         // Adiciona linhas de custo sem receita (campanhas com gasto mas sem venda)
         var existingKeys={};
         G.raw.main.forEach(function(r){
-          var k=(r.sessioncampaignname||'')+'||'+(r.sessionsource||'')+'||'+(r.sessionmedium||'');
+          var k=campaignKey(r.sessioncampaignname,r.sessionsource,r.sessionmedium);
           existingKeys[k]=true;
         });
         Object.keys(costMap).forEach(function(k){
           if(!existingKeys[k]&&costMap[k].cost>0){
-            var parts=k.split('||');
-            G.raw.main.push({sessioncampaignname:parts[0],sessionsource:parts[1],sessionmedium:parts[2],advertiseradcost:costMap[k].cost,purchaserevenue:0,ecommercepurchases:0,sessions:0,activeusers:0,sessiondefaultchannelgrouping:'',region:''});
-            console.log('➕ Custo sem receita: '+parts[0]+' R$ '+costMap[k].cost.toFixed(2));
+            var meta=costMap[k];
+            G.raw.main.push({sessioncampaignname:meta.campaign,sessionsource:meta.source,sessionmedium:meta.medium,advertiseradcost:meta.cost,purchaserevenue:0,ecommercepurchases:0,sessions:0,activeusers:0,sessiondefaultchannelgrouping:'',region:''});
+            console.log('➕ Custo sem receita: '+meta.campaign+' R$ '+meta.cost.toFixed(2));
           }
         });
         var totalCost=Object.values(costMap).reduce(function(a,b){return a+b.cost;},0);
+        G.raw.costTotal=totalCost;
         console.log('✅ Custo total aplicado: R$ '+totalCost.toFixed(2));
         custoOk = true;
       }else{
@@ -1076,15 +1091,15 @@ function fmtDate(d){var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0
 function getDR(){
   var p=$('fPer').value;
   var today=new Date();
-  if(p==='custom')return{startDate:$('fDS').value||'30daysAgo',endDate:$('fDE').value||'today'};
-  if(p==='today')return{startDate:'today',endDate:'today'};
+  if(p==='custom')return{startDate:$('fDS').value||fmtDate(new Date(today.getFullYear(),today.getMonth(),1)),endDate:$('fDE').value||fmtDate(today)};
+  if(p==='today'){var ts=fmtDate(today);return{startDate:ts,endDate:ts};}
   if(p==='yesterday'){var y=new Date(today);y.setDate(y.getDate()-1);var ys=fmtDate(y);return{startDate:ys,endDate:ys};}
-  if(p==='month'){var ms=new Date(today.getFullYear(),today.getMonth(),1);return{startDate:fmtDate(ms),endDate:'today'};}
-  return{startDate:p+'daysAgo',endDate:'today'};
+  if(p==='month'){var ms=new Date(today.getFullYear(),today.getMonth(),1);return{startDate:fmtDate(ms),endDate:fmtDate(today)};}
+  var days=parseInt(p)||30,start=new Date(today);start.setDate(start.getDate()-days+1);return{startDate:fmtDate(start),endDate:fmtDate(today)};
 }
 function getDias(){
   var p=$('fPer').value;
-  if(p==='custom'){var ds=$('fDS').value,de=$('fDE').value;if(ds&&de){return Math.max(1,Math.round((new Date(de)-new Date(ds))/(1000*60*60*24)));} return 30;}
+  if(p==='custom'){var ds=$('fDS').value,de=$('fDE').value;if(ds&&de){return Math.max(1,Math.round((new Date(de)-new Date(ds))/(1000*60*60*24))+1);} return 30;}
   if(p==='today')return 1;
   if(p==='yesterday')return 1;
   if(p==='month'){var today=new Date();return today.getDate();}
@@ -1107,8 +1122,8 @@ function getCompDR(){
     startD=new Date(today.getFullYear(),today.getMonth(),1);endD=new Date(today);
   } else {
     var dias=parseInt(p)||30;
-    var d2=new Date(today);d2.setDate(d2.getDate()-dias-1);
-    var d1=new Date(today);d1.setDate(d1.getDate()-dias*2);
+    var d2=new Date(today);d2.setDate(d2.getDate()-dias);
+    var d1=new Date(d2);d1.setDate(d1.getDate()-dias+1);
     return{startDate:fmtDate(d1),endDate:fmtDate(d2)};
   }
   var dias2=Math.max(1,Math.round((endD-startD)/(1000*60*60*24))+1);
@@ -1166,12 +1181,9 @@ function renderAll(d){
   renderLine(d.months,d.monthsComp||[]);
   renderCostLine(d.months,d.monthsComp||[]);
   renderRoasLine(d.months,d.monthsComp||[]);
-  renderDonut(d.main);
   renderDonutByKey('chan','cDonutChan','eDonutChan','dLegChan',d.main,function(r){return r.sessiondefaultchannelgrouping||'(direct)';});
-  renderDonutByKey('med','cDonutMed','eDonutMed','dLegMed',d.main,function(r){return r.sessionmedium||'(none)';});
   renderDonutByKey('st','cDonutSt','eDonutSt','dLegSt',d.states,function(r){return r.region||'(outros)';},function(r){return safeN(r.purchaserevenue||0);});
   renderDonutByKey('cat','cDonutCat','eDonutCat','dLegCat',d.items,function(r){return r.itemcategory||'(sem categoria)';},function(r){return safeN(r.itemrevenue||0);});
-  renderDonutByKey('camp2','cDonutCamp','eDonutCamp','dLegCamp',d.main,function(r){return r.sessioncampaignname||'(sem campanha)';});
   renderRoasChart(d.main);
   renderFirst(d.first);
   renderLast(d.last);
@@ -1179,8 +1191,6 @@ function renderAll(d){
   renderSessions(d.sessData);
   renderFunnel(d.funnel);
   renderAttribution(d);
-  renderSessFirst(d.first);
-  renderSessLast(d.last);
   renderInsights(d);
 }
 
@@ -1193,6 +1203,12 @@ function renderKPIs(data){
     pur+=safeN(r.ecommercepurchases||0);
     sess+=safeN(r.sessions||0);
   });
+  if(G.raw.totals){
+    rev=safeN(G.raw.totals.purchaserevenue||0);
+    pur=safeN(G.raw.totals.ecommercepurchases||0);
+    sess=safeN(G.raw.totals.sessions||0);
+  }
+  if(G.raw.costTotal!=null)cost=safeN(G.raw.costTotal);
   var roasV=cost>0?rev/cost:0;
   var tkt=pur>0?rev/pur:0;
   var conv=sess>0?(pur/sess)*100:0;
@@ -1608,8 +1624,8 @@ function aggBy(data,keyFn,valFn,includeZero){
 function renderRoasChart(data){
   var grid=$('roasGrid');var emp=$('eRoas');
   var map={};
-  data.forEach(function(r){var camp=r.sessioncampaignname||'(sem campanha)';if(!map[camp])map[camp]={rev:0,cost:0};map[camp].rev+=safeN(r.purchaserevenue||0);map[camp].cost+=safeN(r.advertiseradcost||0);});
-  var entries=Object.entries(map).filter(function(e){return e[1].cost>0;}).map(function(e){return{camp:e[0],rev:e[1].rev,cost:e[1].cost,roas:e[1].rev/e[1].cost};}).sort(function(a,b){return b.roas-a.roas;});
+  data.forEach(function(r){var camp=readableDimension(r.sessioncampaignname||'(sem campanha)'),key=camp.toLocaleLowerCase('pt-BR');if(!map[key])map[key]={camp:camp,rev:0,cost:0};map[key].rev+=safeN(r.purchaserevenue||0);map[key].cost+=safeN(r.advertiseradcost||0);});
+  var entries=Object.values(map).filter(function(e){return e.cost>0;}).map(function(e){return{camp:e.camp,rev:e.rev,cost:e.cost,roas:e.rev/e.cost};}).sort(function(a,b){return b.roas-a.roas;});
   Array.from(grid.children).forEach(function(c){if(c!==emp)grid.removeChild(c);});
   if(!entries.length){emp.style.display='flex';return;}
   emp.style.display='none';
@@ -1623,21 +1639,21 @@ function renderRoasChart(data){
 
 function renderFirst(data){
   G.firstColorMap={};
-  var entries=aggBy(data,function(r){return r.firstusercampaignname||'(sem campanha)';},function(r){return safeN(r.purchaserevenue||0);});
+  var entries=aggBy(data,function(r){return readableDimension(r.firstusercampaignname||'(sem campanha)');},function(r){return safeN(r.purchaserevenue||0);});
   entries.forEach(function(e,i){G.firstColorMap[e[0]]=getC(i);});
   buildBarChart('first','cFirst','eFirst',entries.map(function(e){return e[0];}),entries.map(function(e){return e[1];}),entries.map(function(e){return G.firstColorMap[e[0]];}),brl,true,true);
 }
 
 function renderLast(data){
   var colorMap=G.firstColorMap||{};var colorIdx=Object.keys(colorMap).length;
-  var entries=aggBy(data,function(r){return r.sessioncampaignname||'(sem campanha)';},function(r){return safeN(r.purchaserevenue||0);});
+  var entries=aggBy(data,function(r){return readableDimension(r.sessioncampaignname||'(sem campanha)');},function(r){return safeN(r.purchaserevenue||0);});
   var colors=entries.map(function(e){var camp=e[0];if(!colorMap[camp]){colorMap[camp]=getC(colorIdx++);}return colorMap[camp];});
   buildBarChart('last','cLast','eLast',entries.map(function(e){return e[0];}),entries.map(function(e){return e[1];}),colors,brl,true,true);
 }
 
 function renderTable(data){
   var map={};
-  data.forEach(function(r){var src=r.sessionsource||'(direct)';var camp=r.sessioncampaignname||'(sem campanha)';var k=src+'||'+camp;if(!map[k])map[k]={src:src,camp:camp,rev:0,cost:0,pur:0,sess:0};map[k].rev+=safeN(r.purchaserevenue||0);map[k].cost+=safeN(r.advertiseradcost||0);map[k].pur+=safeN(r.ecommercepurchases||0);map[k].sess+=safeN(r.sessions||0);});
+  data.forEach(function(r){var src=readableDimension(r.sessionsource||'(direct)'),camp=readableDimension(r.sessioncampaignname||'(sem campanha)'),k=src.toLocaleLowerCase('pt-BR')+'||'+camp.toLocaleLowerCase('pt-BR');if(!map[k])map[k]={src:src,camp:camp,rev:0,cost:0,pur:0,sess:0};map[k].rev+=safeN(r.purchaserevenue||0);map[k].cost+=safeN(r.advertiseradcost||0);map[k].pur+=safeN(r.ecommercepurchases||0);map[k].sess+=safeN(r.sessions||0);});
   var rows=Object.values(map).filter(function(r){return r.rev>0||r.cost>0;});
   var col=G.sortCol,asc=G.sortAsc;
   rows.sort(function(a,b){var va=[a.src,a.camp,a.rev,a.cost,a.cost>0?a.rev/a.cost:0,a.pur,a.pur>0?a.rev/a.pur:0,a.sess][col];var vb=[b.src,b.camp,b.rev,b.cost,b.cost>0?b.rev/b.cost:0,b.pur,b.pur>0?b.rev/b.pur:0,b.sess][col];if(typeof va==='string')return asc?va.localeCompare(vb):vb.localeCompare(va);return asc?va-vb:vb-va;});
@@ -1653,14 +1669,12 @@ function renderTable(data){
 function sortBy(col){if(G.sortCol===col)G.sortAsc=!G.sortAsc;else{G.sortCol=col;G.sortAsc=false;}if(G.filtered)renderTable(G.filtered.main);}
 
 function renderSessions(data){
-  if(!data||!data.length){['sSess','sEng','sEngR','sDur','sPpS','sBnc','sNew','sRet'].forEach(id=>$(id).textContent='—');return;}
-  var sess=0,eng=0,dur=0,ppv=0,bnc=0,nw=0,act=0;
-  data.forEach(function(r){var w=safeN(r.sessions||0);sess+=w;eng+=safeN(r.engagedsessions||0);dur+=safeN(r.averagesessionduration||0)*w;ppv+=safeN(r.screenpageviewspersession||0)*w;bnc+=safeN(r.bouncerate||0)*w;nw+=safeN(r.newusers||0);act+=safeN(r.activeusers||0);});
-  var avgDur=sess>0?dur/sess:0;var avgPpv=sess>0?ppv/sess:0;var avgBnc=sess>0?bnc/sess:0;var engRate=sess>0?(eng/sess)*100:0;var ret=Math.max(0,act-nw);
+  if(!data||!data.length){['sSess','sUsers','sActive','sEng','sEngR','sDur','sPpS','sBnc','sNew'].forEach(id=>$(id).textContent='—');return;}
+  var r=data[0],sess=safeN(r.sessions||0),users=safeN(r.totalusers||0),active=safeN(r.activeusers||0),eng=safeN(r.engagedsessions||0),avgDur=safeN(r.averagesessionduration||0),avgPpv=safeN(r.screenpageviewspersession||0),avgBnc=safeN(r.bouncerate||0),nw=safeN(r.newusers||0),engRate=sess>0?(eng/sess)*100:0;
   var fmt=function(s){s=Math.round(s);var m=Math.floor(s/60),sc=s%60;return m+'m '+sc+'s';};
-  $('sSess').textContent=num(sess);$('sEng').textContent=num(eng);$('sEngR').textContent=engRate.toFixed(1).replace('.',',')+' %';
+  $('sSess').textContent=num(sess);$('sUsers').textContent=num(users);$('sActive').textContent=num(active);$('sEng').textContent=num(eng);$('sEngR').textContent=engRate.toFixed(1).replace('.',',')+' %';
   $('sDur').textContent=fmt(avgDur);$('sPpS').textContent=avgPpv.toFixed(1).replace('.',',');$('sBnc').textContent=(avgBnc*100).toFixed(1).replace('.',',')+' %';
-  $('sNew').textContent=num(nw);$('sRet').textContent=num(ret);
+  $('sNew').textContent=num(nw);
 }
 
 function renderFunnel(data){
@@ -1669,6 +1683,8 @@ function renderFunnel(data){
   $('funnelCard').querySelector('.csub').textContent=G.raw.funnelIsSequential?'Funil fechado; etapas indiretas':'Contagem independente; não mede conversão entre etapas';
   if(!data||!data.length){wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">Dados de funil indisponíveis para este período.</div>';return;}
   var STEPS=[
+    {key:'page_view',label:'👁️ Page View',color:'#6366f1'},
+    {key:'view_item',label:'🔎 View Item',color:'#8b5cf6'},
     {key:'add_to_cart',label:'🛒 Add to Cart',color:'#3b82f6'},
     {key:'begin_checkout',label:'💳 Begin Checkout',color:'#f59e0b'},
     {key:'add_shipping_info',label:'🚚 Add Shipping',color:'#eab308'},
