@@ -505,28 +505,28 @@ Selecione a Propriedade</div>
   <div class="funnel-wrap" id="funnelWrap"><div style="text-align:center;padding:40px;color:var(--text3)">Aguardando dados...</div></div>
 </div>
 
-<!-- Atribuição auxiliar capturada pelo GTM -->
+<!-- Atribuição persistente capturada pela implantação GTM -->
 <details class="tcard" id="attributionSection" style="display:none">
-  <summary style="cursor:pointer;font-weight:700">Atribuição auxiliar — diagnóstico de tracking</summary>
-  <p class="attr-note">Compara a origem persistida pelo GTM com a atribuição nativa do GA4. É uma visão de auditoria, não deve ser somada aos relatórios nativos e não altera a atribuição do GA4.</p>
+  <summary style="cursor:pointer;font-weight:700">Atribuição Persistente AD5 — visão completa da jornada</summary>
+  <p class="attr-note"><b>Diferencial da implantação:</b> esta camada preserva a origem inicial e o último contato não direto ao longo da navegação. Ela ajuda a recuperar contexto que pode desaparecer entre páginas, auditar UTMs e comparar a jornada capturada com a atribuição nativa do GA4. É uma visão complementar: não altera o GA4 e não deve ser somada aos relatórios nativos.</p>
 <div class="attr-grid" id="attributionCard">
   <div class="attr-card">
-    <div class="chead"><div><div class="ctitle">First Touch capturado</div><div class="csub">Origem que iniciou o relacionamento rastreável</div></div></div>
-    <div class="attr-note">Usa <b>attr_first_*</b>. É uma visão auxiliar do GTM e não substitui a atribuição nativa do GA4.</div>
+    <div class="chead"><div><div class="ctitle">Origem de descoberta preservada</div><div class="csub">First Touch: quem trouxe o cliente pela primeira vez</div></div></div>
+    <div class="attr-note">Mostra a primeira origem, mídia e campanha identificadas pela implantação. É útil para entender quais canais iniciam relacionamentos que mais tarde viram compra.</div>
     <div class="twrap"><table><thead><tr><th>Origem / mídia</th><th>Campanha</th><th>Compras</th><th>Receita</th></tr></thead><tbody id="attrFirstBody"></tbody></table></div>
   </div>
   <div class="attr-card">
-    <div class="chead"><div><div class="ctitle">Last Non-Direct capturado</div><div class="csub">Último toque não direto persistido</div></div></div>
-    <div class="attr-note">Usa <b>attr_last_*</b> e ajuda a auditar perdas durante a navegação.</div>
+    <div class="chead"><div><div class="ctitle">Origem de influência preservada</div><div class="csub">Last Non-Direct: último contato de marketing antes da compra</div></div></div>
+    <div class="attr-note">Ignora retornos diretos e mantém o último contato identificável. Ajuda a enxergar qual canal influenciou o fechamento mesmo após o usuário continuar navegando.</div>
     <div class="twrap"><table><thead><tr><th>Origem / mídia</th><th>Campanha</th><th>Compras</th><th>Receita</th></tr></thead><tbody id="attrLastBody"></tbody></table></div>
   </div>
   <div class="attr-card full">
-    <div class="chead"><div><div class="ctitle">Auditoria: atribuição nativa × auxiliar</div><div class="csub">Compara a sessão reconhecida pelo GA4 com o Last Non-Direct persistido</div></div></div>
+    <div class="chead"><div><div class="ctitle">Conciliação GA4 × Atribuição Persistente AD5</div><div class="csub">Onde o GA4 reconheceu a sessão e onde a implantação preservou o contato de marketing</div></div></div>
     <div class="twrap"><table><thead><tr><th>GA4 sessão</th><th>Auxiliar last touch</th><th>Campanha auxiliar</th><th>Compras</th><th>Receita</th></tr></thead><tbody id="attrAuditBody"></tbody></table></div>
   </div>
   <div class="attr-card full">
-    <div class="chead"><div><div class="ctitle">Matriz First × Last</div><div class="csub">Quais origens iniciam e quais fecham as jornadas rastreáveis</div></div></div>
-    <div class="twrap"><table><thead><tr><th>First touch</th><th>Last touch</th><th>Compras</th><th>Receita</th></tr></thead><tbody id="attrMatrixBody"></tbody></table></div>
+    <div class="chead"><div><div class="ctitle">Jornada: descoberta × influência</div><div class="csub">Quais origens iniciam o relacionamento e quais participam antes da conversão</div></div></div>
+    <div class="twrap"><table><thead><tr><th>Origem de descoberta</th><th>Origem de influência</th><th>Compras</th><th>Receita</th></tr></thead><tbody id="attrMatrixBody"></tbody></table></div>
   </div>
 </div>
 </details>
@@ -810,7 +810,7 @@ function refreshData(){
 }
 
 function parseRep(rep){
-  if(!rep||!rep.rows||!rep.dimensionHeaders)return[];
+  if(!rep||!rep.rows)return[];
   var dims=(rep.dimensionHeaders||[]).map(function(h){return norm(h.name).replace(/^customevent/,'');});
   var mets=(rep.metricHeaders||[]).map(function(h){return norm(h.name);});
   return(rep.rows||[]).map(function(row){
