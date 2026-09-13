@@ -27,7 +27,7 @@ O cadastro legado allowed_users é preservado na migração e fica restrito a le
 ## Validação
 
 - Testes de cálculo: ausência/zero, metas negativas, pedidos fracionados, meses futuros e bissextos.
-- Testes de relatórios: not set preservado, sete etapas e fallback sem taxa fictícia de conversão.
+- Testes de relatórios: not set preservado, cinco etapas do checkout iguais à exploração configurada e fallback sem taxa fictícia de conversão.
 - Firestore Emulator: leitura entre clientes negada, visualizador sem escrita, promoção própria negada, histórico obrigatório, versão obsoleta negada, suspensão e identidade não verificada bloqueadas.
 - Navegador com respostas controladas: gravação, troca de cliente, visualizador, logout e telas desktop/mobile.
 - Verificação sintática dos scripts e módulos.

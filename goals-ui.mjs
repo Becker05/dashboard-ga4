@@ -35,14 +35,16 @@ export function mountGoals(service){
   async function report(range){
     const target=p;
     const accessToken=token;
-    async function query(names){
-    const r=await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${target.id}:runReport`,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({dateRanges:[range],metrics:names.map(name=>({name}))})});
+    async function query(names,dimensions=[]){
+    const r=await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${target.id}:runReport`,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({dateRanges:[range],dimensions:dimensions.map(name=>({name})),metrics:names.map(name=>({name})),limit:'10000'})});
     const json=await r.json();if(!r.ok)throw new Error(json.error?.message||'Erro ao consultar GA4.');
-    return json.rows?.[0]?.metricValues?.map(v=>Number(v.value))||names.map(()=>0);
+    return json.rows||[];
     }
-    const [base,cost]=await Promise.allSettled([query(['purchaseRevenue','ecommercePurchases']),query(['advertiserAdCost'])]);
+    const [base,cost]=await Promise.allSettled([query(['purchaseRevenue','ecommercePurchases']),query(['advertiserAdCost'],['sessionCampaignName'])]);
     if(base.status==='rejected')throw base.reason;
-    return {...monthlyActual(base.value[0],base.value[1],cost.status==='fulfilled'?cost.value[0]:null),costError:cost.status==='rejected'?cost.reason.message:null};
+    const baseValues=base.value[0]?.metricValues?.map(v=>Number(v.value))||[0,0];
+    const costValue=cost.status==='fulfilled'?cost.value.reduce((sum,row)=>sum+Number(row.metricValues?.[0]?.value||0),0):null;
+    return {...monthlyActual(baseValues[0],baseValues[1],costValue),costError:cost.status==='rejected'?cost.reason.message:null};
   }
   function format(v,key){if(v==null)return 'Indisponível';if(key==='roas')return v.toFixed(2)+'x';if(key==='orders')return new Intl.NumberFormat('pt-BR').format(v);return new Intl.NumberFormat('pt-BR',{style:'currency',currency:p.currency}).format(v);}
   function render(){
@@ -88,12 +90,12 @@ export function mountGoals(service){
       render();
     }catch(e){if(run===generation)status.textContent=e.message;}
   }
-  window.addEventListener('dashboard-access',e=>{access=e.detail;if(access.isAdmin)mountAdmin();});
+  window.addEventListener('dashboard-access',e=>{access=e.detail;document.getElementById('adminPanel')?.remove();if(access.isAdmin)mountAdmin();});
   window.addEventListener('dashboard-property',e=>{if(!panel)build();p=e.detail.property;token=e.detail.token;panel.hidden=false;scope.textContent=(p?.clientName||'Cliente')+' / '+(p?.nome||'')+' · GA4 '+p?.id;if(!month.value)month.value=new Intl.DateTimeFormat('en-CA',{timeZone:p?.timeZone||'America/Sao_Paulo',year:'numeric',month:'2-digit'}).format(new Date()).slice(0,7);load();});
   window.addEventListener('dashboard-logout',()=>{generation++;p=null;token='';goal=actual=previous=null;if(panel){panel.hidden=true;summary.replaceChildren();history.replaceChildren();fields.forEach(f=>controls[f].value='');}document.getElementById('adminPanel')?.remove();});
   function mountAdmin(){
     if(document.getElementById('adminPanel'))return;
-    const box=el('details',null,{className:'tcard',id:'adminPanel'});box.append(el('summary','Administração de clientes e acessos'));
+    const box=el('details',null,{className:'tcard',id:'adminPanel'});box.append(el('summary','Administração de clientes e acessos — somente administrador da plataforma'));
     const note=el('p','Selecione um cliente para editar ou preencha um novo ID. Um usuário pode ser associado a vários clientes.',{className:'attr-note'}),select=el('select'),f=el('form'),inputs={},message=el('p','',{role:'status'});
     select.append(el('option','Novo cliente',{value:''}));
     service.listClients().then(clients=>{clients.forEach(c=>select.append(el('option',c.name,{value:c.id})));select.onchange=()=>{const c=clients.find(x=>x.id===select.value);if(c){inputs.clientId.value=c.id;inputs.name.value=c.name;inputs.active.checked=c.active;inputs.plan.value=c.plan||'report';}};}).catch(e=>message.textContent=e.message);

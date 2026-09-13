@@ -2,7 +2,7 @@
   "name": "dashboard-ga4",
   "private": true,
   "scripts": {
-    "test": "node --test tests/*.test.mjs",
+    "test": "node --test tests/*.test.mjs && node tests/ui.cjs && node tests/report-dom.cjs",
     "test:rules": "firebase emulators:exec --only firestore --project demo-dashboard-ga4 \"node --test tests/rules.cjs\""
   },
   "devDependencies": {

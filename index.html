@@ -509,7 +509,10 @@ Selecione a Propriedade</div>
 </div>
 
 <!-- Atribuição auxiliar capturada pelo GTM -->
-<div class="attr-grid" id="attributionCard" style="display:none">
+<details class="tcard" id="attributionSection" style="display:none">
+  <summary style="cursor:pointer;font-weight:700">Atribuição auxiliar — diagnóstico de tracking</summary>
+  <p class="attr-note">Compara a origem persistida pelo GTM com a atribuição nativa do GA4. É uma visão de auditoria, não deve ser somada aos relatórios nativos e não altera a atribuição do GA4.</p>
+<div class="attr-grid" id="attributionCard">
   <div class="attr-card">
     <div class="chead"><div><div class="ctitle">First Touch capturado</div><div class="csub">Origem que iniciou o relacionamento rastreável</div></div></div>
     <div class="attr-note">Usa <b>attr_first_*</b>. É uma visão auxiliar do GTM e não substitui a atribuição nativa do GA4.</div>
@@ -529,6 +532,7 @@ Selecione a Propriedade</div>
     <div class="twrap"><table><thead><tr><th>First touch</th><th>Last touch</th><th>Compras</th><th>Receita</th></tr></thead><tbody id="attrMatrixBody"></tbody></table></div>
   </div>
 </div>
+</details>
 
 <!-- Tabela -->
 <div class="tcard" id="tableCard" style="display:none">
@@ -617,11 +621,11 @@ function hideSkeletonKPIs(){
 }
 
 function showDashboard(){
-  ['filterCard','kpiGrid','chartsGrid','funnelCard','attributionCard','tableCard','insightCard'].forEach(function(id){var el=$(id);if(el)el.style.display='';});
+  ['filterCard','kpiGrid','chartsGrid','funnelCard','attributionSection','tableCard','insightCard'].forEach(function(id){var el=$(id);if(el)el.style.display='';});
   $('btnRef').style.display='';$('btnLogout').style.display='';$('userBadge').style.display='';
 }
 function hideDashboard(){
-  ['filterCard','kpiGrid','chartsGrid','funnelCard','attributionCard','tableCard','insightCard'].forEach(function(id){var el=$(id);if(el)el.style.display='none';});
+  ['filterCard','kpiGrid','chartsGrid','funnelCard','attributionSection','tableCard','insightCard'].forEach(function(id){var el=$(id);if(el)el.style.display='none';});
   $('btnRef').style.display='none';$('btnLogout').style.display='none';$('userBadge').style.display='none';
   $('propSelectWrap').style.display='none';$('propSelectorCard').style.display='none';
   // ── CORREÇÃO 1: limpa timers ao ocultar ──
@@ -881,7 +885,7 @@ async function ga4FunnelReqSafe(body,timeoutMs){
 }
 
 function funnelBody(dr){
-  var names=['page_view','view_item','add_to_cart','begin_checkout','add_shipping_info','add_payment_info','purchase'];
+  var names=['add_to_cart','begin_checkout','add_shipping_info','add_payment_info','purchase'];
   return {dateRanges:[dr],funnel:{isOpenFunnel:false,steps:names.map(function(name){return{name:name,isDirectlyFollowedBy:false,filterExpression:{funnelEventFilter:{eventName:name}}};})},limit:'50'};
 }
 
@@ -1266,8 +1270,10 @@ function renderKPIs(data){
   setDelta('kCacD',cac,cacC,brl,true);
 
   const cart=G.raw.cartFunnel?.find(r=>r.funnelstepname?.endsWith('add_to_cart'));
-  $('kAband').textContent=cart&&cart.activeusers>0?pct(100*cart.abandonmentrate):'—';
-  $('kAbandS').textContent=cart?num(cart.abandonments)+' de '+num(cart.activeusers)+' usuários':'Sequência carrinho → compra indisponível';
+  const cartRate=cart?.funnelstepabandonmentrate;
+  const cartAbandonments=cart?.funnelstepabandonments;
+  $('kAband').textContent=cart&&cart.activeusers>0&&cartRate!=null?pct(100*cartRate):'—';
+  $('kAbandS').textContent=cart&&cartAbandonments!=null?num(cartAbandonments)+' de '+num(cart.activeusers)+' usuários':'Sequência carrinho → compra indisponível';
   $('kAbandD').style.display='none';
 }
 
@@ -1637,8 +1643,11 @@ function renderTable(data){
   rows.sort(function(a,b){var va=[a.src,a.camp,a.rev,a.cost,a.cost>0?a.rev/a.cost:0,a.pur,a.pur>0?a.rev/a.pur:0,a.sess][col];var vb=[b.src,b.camp,b.rev,b.cost,b.cost>0?b.rev/b.cost:0,b.pur,b.pur>0?b.rev/b.pur:0,b.sess][col];if(typeof va==='string')return asc?va.localeCompare(vb):vb.localeCompare(va);return asc?va-vb:vb-va;});
   $('tCount').textContent=rows.length+' linhas';
   var roasClass=function(v){return 'rn';};
-  if(!rows.length){$('tBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">Sem dados para os filtros selecionados</td></tr>';return;}
-  $('tBody').innerHTML=safeHtml(rows.map(function(r){var roas=r.cost>0?r.rev/r.cost:0;var tkt=r.pur>0?r.rev/r.pur:0;return'<tr><td>'+(r.src||'—')+'</td><td>'+short(r.camp,30)+'</td><td>'+brl(r.rev)+'</td><td>'+(r.cost>0?brl(r.cost):'<span class="rn">—</span>')+'</td><td class="'+roasClass(roas)+'">'+(r.cost>0?roasF(roas):'<span class="rn">—</span>')+'</td><td>'+num(r.pur)+'</td><td>'+(r.pur>0?brl(tkt):'<span class="rn">—</span>')+'</td><td>'+num(r.sess)+'</td></tr>';}).join(''));
+  var body=$('tBody');body.replaceChildren();
+  if(!rows.length){var emptyRow=document.createElement('tr'),emptyCell=document.createElement('td');emptyCell.colSpan=8;emptyCell.textContent='Sem dados para os filtros selecionados';emptyCell.style.cssText='text-align:center;padding:28px;color:var(--text3)';emptyRow.append(emptyCell);body.append(emptyRow);return;}
+  rows.forEach(function(r){var roas=r.cost>0?r.rev/r.cost:0,tkt=r.pur>0?r.rev/r.pur:0,tr=document.createElement('tr');[
+    r.src||'—',short(r.camp,30),brl(r.rev),r.cost>0?brl(r.cost):'—',r.cost>0?roasF(roas):'—',num(r.pur),r.pur>0?brl(tkt):'—',num(r.sess)
+  ].forEach(function(value,i){var td=document.createElement('td');td.textContent=value;if((i===3||i===4||i===6)&&value==='—')td.className='rn';if(i===4)td.className=roasClass(roas);tr.append(td);});body.append(tr);});
 }
 
 function sortBy(col){if(G.sortCol===col)G.sortAsc=!G.sortAsc;else{G.sortCol=col;G.sortAsc=false;}if(G.filtered)renderTable(G.filtered.main);}
@@ -1660,8 +1669,6 @@ function renderFunnel(data){
   $('funnelCard').querySelector('.csub').textContent=G.raw.funnelIsSequential?'Funil fechado; etapas indiretas':'Contagem independente; não mede conversão entre etapas';
   if(!data||!data.length){wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">Dados de funil indisponíveis para este período.</div>';return;}
   var STEPS=[
-    {key:'page_view',label:'👁️ Page View',color:'#4f46e5'},
-    {key:'view_item',label:'🛍️ View Item',color:'#7c3aed'},
     {key:'add_to_cart',label:'🛒 Add to Cart',color:'#3b82f6'},
     {key:'begin_checkout',label:'💳 Begin Checkout',color:'#f59e0b'},
     {key:'add_shipping_info',label:'🚚 Add Shipping',color:'#eab308'},
@@ -1698,13 +1705,10 @@ function renderFunnel(data){
 function attrLabel(v,fallback){return v&&v!=='(not set)'?v:(v==='(not set)'?'(not set)':fallback||'(vazio)');}
 function renderAttrRows(bodyId,data,mode){
   var body=$(bodyId);if(!body)return;
-  if(!data||!data.length){body.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3)">Sem dados pós-implantação neste período.</td></tr>';return;}
+  body.replaceChildren();
+  if(!data||!data.length){var emptyRow=document.createElement('tr'),emptyCell=document.createElement('td');emptyCell.colSpan=5;emptyCell.textContent='Sem dados pós-implantação neste período.';emptyCell.style.cssText='text-align:center;color:var(--text3)';emptyRow.append(emptyCell);body.append(emptyRow);return;}
   var rows=data.slice().sort(function(a,b){return safeN(b.purchaserevenue)-safeN(a.purchaserevenue);});
-  body.innerHTML=safeHtml(rows.map(function(r){
-    if(mode==='audit')return '<tr><td>'+attrLabel(r.sessionsource)+' / '+attrLabel(r.sessionmedium)+'</td><td>'+attrLabel(r.attrlastsource)+' / '+attrLabel(r.attrlastmedium)+'</td><td>'+attrLabel(r.attrlastcampaign)+'</td><td>'+num(r.ecommercepurchases)+'</td><td>'+brl(r.purchaserevenue)+'</td></tr>';
-    if(mode==='matrix')return '<tr><td>'+attrLabel(r.attrfirstsource)+'</td><td>'+attrLabel(r.attrlastsource)+'</td><td>'+num(r.ecommercepurchases)+'</td><td>'+brl(r.purchaserevenue)+'</td></tr>';
-    var p=mode==='first'?'attrfirst':'attrlast';return '<tr><td>'+attrLabel(r[p+'source'])+' / '+attrLabel(r[p+'medium'])+'</td><td>'+attrLabel(r[p+'campaign'])+'</td><td>'+num(r.ecommercepurchases)+'</td><td>'+brl(r.purchaserevenue)+'</td></tr>';
-  }).join(''));
+  rows.forEach(function(r){var values;if(mode==='audit')values=[attrLabel(r.sessionsource)+' / '+attrLabel(r.sessionmedium),attrLabel(r.attrlastsource)+' / '+attrLabel(r.attrlastmedium),attrLabel(r.attrlastcampaign),num(r.ecommercepurchases),brl(r.purchaserevenue)];else if(mode==='matrix')values=[attrLabel(r.attrfirstsource),attrLabel(r.attrlastsource),num(r.ecommercepurchases),brl(r.purchaserevenue)];else{var p=mode==='first'?'attrfirst':'attrlast';values=[attrLabel(r[p+'source'])+' / '+attrLabel(r[p+'medium']),attrLabel(r[p+'campaign']),num(r.ecommercepurchases),brl(r.purchaserevenue)];}var tr=document.createElement('tr');values.forEach(function(value){var td=document.createElement('td');td.textContent=value;tr.append(td);});body.append(tr);});
 }
 function renderAttribution(d){
   renderAttrRows('attrFirstBody',d.attrFirst,'first');
@@ -1775,7 +1779,7 @@ window.addEventListener('load',function(){
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('/dashboard-ga4/sw.js')
+    navigator.serviceWorker.register('./sw.js')
       .then(function(r){console.log('✅ SW registrado:',r.scope);})
       .catch(function(e){console.warn('❌ SW erro:',e);});
   });
