@@ -36,7 +36,7 @@ export function mountGoals(service){
     const target=p;
     const accessToken=token;
     async function query(names,dimensions=[]){
-    const r=await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${target.id}:runReport`,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({dateRanges:[range],dimensions:dimensions.map(name=>({name})),metrics:names.map(name=>({name})),limit:'10000'})});
+    const r=await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${target.id}:runReport`,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({dateRanges:[range],dimensions:dimensions.map(name=>({name})),metrics:names.map(name=>({name})),limit:'100000'})});
     const json=await r.json();if(!r.ok)throw new Error(json.error?.message||'Erro ao consultar GA4.');
     return json.rows||[];
     }
