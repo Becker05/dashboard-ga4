@@ -43,18 +43,18 @@ As seis dimensões auxiliares foram identificadas pela API na propriedade 294956
 
 ## E0 — Correções e validação da base
 
-- [ ] Corrigir o KPI de abandono: não usar volume de add_to_cart menos compras como abandono de pessoas. Consultar sequência carrinho → compra especificamente para esse indicador.
-- [ ] Quando a API de funil falhar, identificar a alternativa como volume de eventos e remover taxas e título de conversão sequencial.
-- [ ] Renomear First Click/Last Click nativos conforme o escopo real das consultas: primeiro usuário e sessão. Não apresentar sessão como modelo de último clique.
-- [ ] Alterar CAC atual para CPA; revisar numeradores, denominadores, devoluções e definição de compra em todos os KPIs.
-- [ ] Remover limites universais de ROAS e conversão dos insights; usar metas configuradas ou indicar ausência de referência.
-- [ ] Mostrar zero, sem dados, sem permissão, dimensão inexistente e erro de consulta como estados distintos.
-- [ ] Consultar disponibilidade das dimensões por propriedade; falha em recurso opcional não impede relatório nativo.
-- [ ] Paginar consultas quando necessário; mostrar truncamento, limiares e amostragem quando informados pela API.
-- [ ] Revisar agregações: usuários não são somáveis indiscriminadamente; taxas devem usar denominadores corretos; custo não pode ser duplicado no cruzamento por região/produto.
-- [ ] Proteger renderizações HTML contra conteúdo recebido de campanhas, produtos e demais dimensões.
-- [ ] Validar cache por propriedade, período e consulta; limpar dados ao trocar cliente/logout; testar atualização do service worker.
-- [ ] Testar consultas reais, erros parciais e renderização desktop/mobile; marcar implantação no histórico.
+- [x] Corrigir o KPI de abandono: usa o funil sequencial carrinho → compra em vez de subtrair volumes de eventos.
+- [x] Quando a API de funil falha, a alternativa é identificada como volume de eventos e não exibe taxa sequencial fictícia.
+- [x] Renomear as perspectivas nativas como aquisição do primeiro usuário e aquisição da sessão.
+- [x] Alterar CAC para CPA e usar investimento ÷ compras. Conciliação de pedidos e devoluções reais permanece para E5.
+- [x] Remover limites universais de ROAS e conversão; o novo resumo usa metas configuradas.
+- [x] Distinguir ausência, zero e falha nas consultas centrais e no novo resumo. A revisão de todos os componentes legados continua aberta.
+- [x] Consultar disponibilidade das dimensões auxiliares por propriedade; falha opcional não impede o relatório nativo.
+- [x] Paginar consultas gerais até 50 mil linhas e sinalizar limite, limiares e amostragem quando informados.
+- [ ] Concluir auditoria de todas as agregações e denominadores. Usuários deixaram de ser somados por canal na visão geral, mas falta conciliação real de uma amostra e revisão econômica completa.
+- [x] Sanitizar conteúdo dinâmico recebido da API antes de renderizar HTML.
+- [x] Isolar cache por consulta/propriedade, limpar na troca/logout e ativar imediatamente o service worker atual.
+- [ ] Testar e conciliar consultas reais equivalentes no GA4. Sintaxe, regressão, regras, estados parciais e desktop/mobile já possuem testes automatizados.
 
 Aceite: cenários de API indisponível não geram ROAS zero ou falso funil; indicadores têm definição legível; valores de amostra são conciliados com consultas equivalentes do GA4.
 
