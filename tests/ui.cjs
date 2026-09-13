@@ -11,7 +11,7 @@ const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),
  await select('a','manager');await page.locator('input[type=number]').first().fill('1000');await page.getByRole('button',{name:'Salvar metas'}).click();await page.waitForFunction(()=>document.querySelector('#goalsPanel [role=status]').textContent.includes('Meta salva'));
  assert.ok(await page.locator('#goalsPanel').innerText().then(t=>t.includes('5.00x')&&!t.includes('cobertura não validada')&&!t.includes('Sem avaliação')));
  await page.locator('input[type=month]').fill('2024-02');await page.getByRole('button',{name:'Recarregar',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#goalsPanel [role=status]').textContent.includes('2024-02-29'));
- assert.ok(requests.some(r=>r.metrics[0].name==='advertiserAdCost'&&r.dimensions[0].name==='sessionCampaignName'&&r.dateRanges[0].startDate==='2024-02-01'&&r.dateRanges[0].endDate==='2024-02-29'));
+ assert.ok(requests.some(r=>r.metrics[0].name==='advertiserAdCost'&&r.dimensions[0].name==='sessionSource'&&r.dateRanges[0].startDate==='2024-02-01'&&r.dateRanges[0].endDate==='2024-02-29'));
  failCost=true;await page.getByRole('button',{name:'Recarregar',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#goalsPanel').textContent.includes('custo negado'));
  assert.ok((await page.locator('#goalsPanel tbody').innerText()).includes('500,00'));failCost=false;
  await page.locator('input[type=month]').fill(new Date().toISOString().slice(0,7));await page.getByRole('button',{name:'Recarregar',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#goalsPanel input[type=number]').value==='1000');

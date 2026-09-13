@@ -904,15 +904,35 @@ async function ga4OptionalReqSafe(body,timeoutMs){
 async function fetchHistory(dr,useDia,timeoutMs){
   var dateDimension=useDia?'date':'yearMonth';
   var revenue=parseRep(await ga4ReqSafe({dateRanges:[dr],dimensions:[{name:dateDimension}],metrics:[{name:'purchaseRevenue'},{name:'ecommercePurchases'},{name:'sessions'}],orderBys:[{dimension:{dimensionName:dateDimension}}],limit:500},timeoutMs));
-  var costRows=[],costMetric='';
-  for(const metric of ['advertiserAdCost','manualAdCost']){
+  // Com date/yearMonth, algumas propriedades repetem o custo integral em cada
+  // linha. Intervalos nomeados preservam o total correto de cada período.
+  var periods=[];
+  var start=new Date(dr.startDate+'T12:00:00Z'),end=new Date(dr.endDate+'T12:00:00Z'),cursor=new Date(start);
+  while(cursor<=end){
+    var y=cursor.getUTCFullYear(),m=cursor.getUTCMonth(),key;
+    if(useDia){
+      key=String(y)+String(m+1).padStart(2,'0')+String(cursor.getUTCDate()).padStart(2,'0');
+      var iso=key.slice(0,4)+'-'+key.slice(4,6)+'-'+key.slice(6,8);
+      periods.push({key:key,startDate:iso,endDate:iso});
+      cursor.setUTCDate(cursor.getUTCDate()+1);
+    }else{
+      key=String(y)+String(m+1).padStart(2,'0');
+      var monthStart=new Date(Date.UTC(y,m,1,12)),monthEnd=new Date(Date.UTC(y,m+1,0,12));
+      var ps=monthStart<start?start:monthStart,pe=monthEnd>end?end:monthEnd;
+      periods.push({key:key,startDate:ps.toISOString().slice(0,10),endDate:pe.toISOString().slice(0,10)});
+      cursor=new Date(Date.UTC(y,m+1,1,12));
+    }
+  }
+  var costRows=[];
+  for(var bi=0;bi<periods.length;bi+=4){
+    var batch=periods.slice(bi,bi+4),ranges=batch.map(function(p){return{startDate:p.startDate,endDate:p.endDate,name:p.key};});
     try{
-      costRows=parseRep(await ga4ReqSafe({dateRanges:[dr],dimensions:[{name:dateDimension},{name:'sessionCampaignName'}],metrics:[{name:metric}],orderBys:[{dimension:{dimensionName:dateDimension}}],limit:100000},timeoutMs));
-      if(costRows.some(function(row){return safeN(row[norm(metric)])>0;})){costMetric=norm(metric);break;}
-    }catch(e){console.warn('Histórico de '+metric+': '+e.message);}
+      var batchRows=parseRep(await ga4ReqSafe({dateRanges:ranges,dimensions:[{name:'sessionSource'}],metrics:[{name:'advertiserAdCost'}],limit:10000},timeoutMs));
+      batchRows.forEach(function(row){if(!row.daterange&&batch.length===1)row.daterange=batch[0].key;costRows.push(row);});
+    }catch(e){console.warn('Histórico de custo ('+ranges[0].startDate+' a '+ranges[ranges.length-1].endDate+'): '+e.message);}
   }
   var costByDate={};
-  costRows.forEach(function(row){var key=row[norm(dateDimension)];costByDate[key]=(costByDate[key]||0)+safeN(row[costMetric]||0);});
+  costRows.forEach(function(row){var key=row.daterange;costByDate[key]=(costByDate[key]||0)+safeN(row.advertiseradcost||0);});
   var seen={};
   revenue.forEach(function(row){var key=row[norm(dateDimension)];row.advertiseradcost=costByDate[key]||0;seen[key]=true;});
   Object.keys(costByDate).forEach(function(key){if(!seen[key]){var row={purchaserevenue:0,ecommercepurchases:0,sessions:0,advertiseradcost:costByDate[key]};row[norm(dateDimension)]=key;revenue.push(row);}});
@@ -999,20 +1019,12 @@ async function fetchAll(){
 
     setLoad(true,'Buscando custos de mídia...');
     var custoOk = false;
-    G.raw.costTotal=G.raw.historyCostTotal>0?G.raw.historyCostTotal:null;
+    G.raw.costTotal=null;
+    G.raw.costBreakdown={google:0,nonGoogle:0,total:0};
     try{
-      var metricasCusto=['advertiserAdCost','manualAdCost'];
-      var cd=[];var metricaUsada='';
-      for(var mi=0;mi<metricasCusto.length;mi++){
-        try{
-          var qc=await ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'},{name:'sessionMedium'}],metrics:[{name:metricasCusto[mi]}],limit:100000},tmo);
-          var cdTemp=parseRep(qc);
-          var totalTemp=cdTemp.reduce(function(a,r){var keys=Object.keys(r).filter(function(k){return k!=='sessioncampaignname'&&k!=='sessionsource'&&k!=='sessionmedium';});return a+safeN(r[keys[0]]||0);},0);
-          console.log('🔍 '+metricasCusto[mi]+': R$ '+totalTemp.toFixed(2));
-          if(totalTemp>0){cd=cdTemp;metricaUsada=metricasCusto[mi].toLowerCase().replace(/[^a-z0-9]/g,'');console.log('✅ Usando métrica: '+metricasCusto[mi]);break;}
-        }catch(me){console.warn('❌ '+metricasCusto[mi]+': '+me.message);}
-      }
-      if(cd.length>0&&metricaUsada){
+      var qc=await ga4ReqSafe({dateRanges:[dr],dimensions:[{name:'sessionCampaignName'},{name:'sessionSource'},{name:'sessionMedium'}],metrics:[{name:'advertiserAdCost'}],limit:100000},tmo);
+      var cd=parseRep(qc),metricaUsada='advertiseradcost';
+      if(cd.length>0){
         // ── CORREÇÃO 2: custo distribuído sem appliedKeys ──
         var costMap={};
         cd.forEach(function(c){
@@ -1045,8 +1057,10 @@ async function fetchAll(){
           }
         });
         var totalCost=Object.values(costMap).reduce(function(a,b){return a+b.cost;},0);
-        if(G.raw.costTotal==null)G.raw.costTotal=totalCost;
-        else if(Math.abs(G.raw.costTotal-totalCost)>.01){console.warn('Conciliação de custo: histórico R$ '+G.raw.costTotal.toFixed(2)+'; campanhas R$ '+totalCost.toFixed(2));_partialErrors.push('O detalhamento por campanha não conciliou com o custo consolidado; os cards usam o consolidado.');}
+        var googleCost=cd.reduce(function(total,row){return total+(String(row.sessionsource||'').toLowerCase()==='google'?safeN(row.advertiseradcost||0):0);},0);
+        G.raw.costTotal=totalCost;
+        G.raw.costBreakdown={google:googleCost,nonGoogle:Math.max(0,totalCost-googleCost),total:totalCost};
+        if(G.raw.historyCostTotal>0&&Math.abs(G.raw.historyCostTotal-totalCost)>.01){console.warn('Conciliação de custo: histórico R$ '+G.raw.historyCostTotal.toFixed(2)+'; consolidado R$ '+totalCost.toFixed(2));_partialErrors.push('O histórico de custo ficou parcial; os cards usam o total conciliado por origem e campanha.');}
         console.log('✅ Custo total aplicado: R$ '+totalCost.toFixed(2));
         custoOk = true;
       }else{
@@ -1265,7 +1279,8 @@ function renderKPIs(data){
   setDelta('kRevD',rev,revC);
 
   $('kCost').textContent=cost>0?brl(cost):'Indisponível';
-  $('kCostS').textContent=cost>0?'Custo real GA4':'Sem custo atribuído';
+  var cb=G.raw.costBreakdown||{};
+  $('kCostS').textContent=cost>0?'Google '+brl(cb.google||0)+' + não Google '+brl(cb.nonGoogle||0):'Sem custo atribuído';
   setDelta('kCostD',cost,costC,brl,true);
 
   $('kRoas').textContent=cost>0?roasF(roasV):'N/A';

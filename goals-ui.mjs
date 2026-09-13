@@ -40,7 +40,7 @@ export function mountGoals(service){
     const json=await r.json();if(!r.ok)throw new Error(json.error?.message||'Erro ao consultar GA4.');
     return json.rows||[];
     }
-    const [base,cost]=await Promise.allSettled([query(['purchaseRevenue','ecommercePurchases']),query(['advertiserAdCost'],['sessionCampaignName'])]);
+    const [base,cost]=await Promise.allSettled([query(['purchaseRevenue','ecommercePurchases']),query(['advertiserAdCost'],['sessionSource'])]);
     if(base.status==='rejected')throw base.reason;
     const baseValues=base.value[0]?.metricValues?.map(v=>Number(v.value))||[0,0];
     const costValue=cost.status==='fulfilled'?cost.value.reduce((sum,row)=>sum+Number(row.metricValues?.[0]?.value||0),0):null;
